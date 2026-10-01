@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>TradeRadar PRO MAX — TickerAll MT5 Auto-Trader</title>
+<title>TradeRadar PRO — Deriv Auto-Trader</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
@@ -20,7 +20,6 @@ body{background:var(--bg);color:var(--text);font-family:'Inter','IBM Plex Sans A
 ::-webkit-scrollbar{width:8px;height:8px}
 ::-webkit-scrollbar-track{background:var(--panel2)}
 ::-webkit-scrollbar-thumb{background:#2a3a55;border-radius:4px}
-::-webkit-scrollbar-thumb:hover{background:#3a4a6a}
 .mono{font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums}
 .hidden{display:none!important}
 .ltr{direction:ltr;text-align:left}
@@ -31,7 +30,7 @@ body{background:var(--bg);color:var(--text);font-family:'Inter','IBM Plex Sans A
 .logo .badge{font-size:9px;color:var(--muted);font-weight:400;background:var(--panel2);padding:2px 6px;border-radius:4px}
 .status-dot{width:10px;height:10px;border-radius:50%;background:var(--muted);transition:all .3s;flex-shrink:0}
 .status-dot.live{background:var(--green);box-shadow:0 0 8px var(--green);animation:pulse 2s infinite}
-.status-dot.poll{background:var(--orange)}
+.status-dot.connecting{background:var(--orange);animation:pulse 1s infinite}
 .status-dot.off{background:var(--red)}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
 .spacer{flex:1}
@@ -55,10 +54,8 @@ body{background:var(--bg);color:var(--text);font-family:'Inter','IBM Plex Sans A
 .acc-item{display:flex;flex-direction:column;gap:2px;min-width:100px}
 .acc-item .lbl{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;font-weight:600}
 .acc-item .val{font-size:15px;font-weight:700;font-family:'JetBrains Mono',monospace}
-.acc-item .val.up{color:var(--green)}
-.acc-item .val.dn{color:var(--red)}
 .demo-badge{background:rgba(255,176,32,.15);color:var(--orange);border:1px solid rgba(255,176,32,.4);font-size:10px;font-weight:700;padding:3px 8px;border-radius:4px;align-self:center}
-.live-badge{background:rgba(255,59,92,.15);color:var(--red);border:1px solid rgba(255,59,92,.5);font-size:10px;font-weight:700;padding:3px 8px;border-radius:4px;align-self:center}
+.real-badge{background:rgba(255,59,92,.15);color:var(--red);border:1px solid rgba(255,59,92,.5);font-size:10px;font-weight:700;padding:3px 8px;border-radius:4px;align-self:center}
 
 /* MAIN */
 .main{padding:12px;max-width:1900px;margin:0 auto}
@@ -134,8 +131,6 @@ body{background:var(--bg);color:var(--text);font-family:'Inter','IBM Plex Sans A
 .meta-row{display:flex;justify-content:space-between;padding:5px 8px;background:var(--panel2);border-radius:5px;font-size:11px;margin-top:4px}
 .meta-row .k{color:var(--muted)}
 .meta-row .v{font-family:'JetBrains Mono',monospace;font-weight:600}
-.heat-bar{height:8px;background:var(--panel2);border-radius:4px;overflow:hidden;margin-top:6px}
-.heat-bar>div{height:100%;background:var(--green);transition:all .3s}
 
 /* TABLES */
 .tbl-wrap{overflow-x:auto}
@@ -176,6 +171,7 @@ td.mono{font-family:'JetBrains Mono',monospace}
 .error-box{background:rgba(255,59,92,.1);border:1px solid rgba(255,59,92,.4);color:var(--red);border-radius:6px;padding:10px;font-size:11px;margin-bottom:10px;display:none}
 .error-box.on{display:block}
 .warn-box{background:rgba(255,176,32,.08);border:1px solid rgba(255,176,32,.4);color:var(--orange);border-radius:6px;padding:10px;font-size:11px;margin-bottom:10px;line-height:1.7}
+.info-box{background:rgba(56,189,248,.08);border:1px solid rgba(56,189,248,.4);color:var(--blue);border-radius:6px;padding:10px;font-size:11px;margin-bottom:10px;line-height:1.7}
 
 /* TOASTS */
 .toasts{position:fixed;top:64px;left:16px;z-index:2000;display:flex;flex-direction:column;gap:8px;max-width:360px}
@@ -186,56 +182,49 @@ td.mono{font-family:'JetBrains Mono',monospace}
 .toast.success{border-right-color:var(--green)}
 .toast.warn{border-right-color:var(--orange)}
 .toast.error{border-right-color:var(--red)}
-
-/* POSITIONS */
 .pos-action{display:flex;gap:3px;justify-content:flex-end}
 .pos-action .btn{padding:3px 7px;font-size:9px}
 </style>
 </head>
 <body>
 
-<!-- ========== TOPBAR ========== -->
+<!-- TOPBAR -->
 <header class="topbar">
   <div class="logo">
     <span>⚡</span><span>TradeRadar</span>
-    <span class="badge">PRO MAX · TickerAll</span>
+    <span class="badge">PRO · Deriv</span>
   </div>
   <span class="status-dot off" id="statusDot" title="غير متصل"></span>
   <span class="chip"><span class="lbl">UTC</span><span class="mono ltr" id="utcClock">--:--:--</span></span>
-  <span class="chip" id="symbolsChip" title="الرموز المرتبطة"><span class="lbl">رموز</span><span class="mono" id="symbolsVal">—</span></span>
+  <span class="chip" id="loginChip"><span class="lbl">Login</span><span class="mono" id="loginVal">—</span></span>
   <div class="spacer"></div>
   <button class="btn" id="btnAutoTrade" title="تفعيل/إيقاف التداول الآلي">🤖 Auto-Trade: OFF</button>
   <button class="btn danger" id="btnKillSwitch" title="إغلاق كل المراكز">🛑 Kill Switch</button>
-  <button class="btn" id="btnSettings" title="إعدادات API">⚙️ API Settings</button>
+  <button class="btn" id="btnSettings" title="إعدادات API">⚙️</button>
 </header>
 
-<!-- ========== ACCOUNT BAR ========== -->
+<!-- ACCOUNT BAR -->
 <section class="account-bar" id="accountBar">
   <div class="acc-item"><div class="lbl">Balance</div><div class="val mono" id="accBalance">—</div></div>
-  <div class="acc-item"><div class="lbl">Equity</div><div class="val mono" id="accEquity">—</div></div>
-  <div class="acc-item"><div class="lbl">P/L</div><div class="val mono" id="accPL">—</div></div>
-  <div class="acc-item"><div class="lbl">Free Margin</div><div class="val mono" id="accFreeMargin">—</div></div>
-  <div class="acc-item"><div class="lbl">Open</div><div class="val mono" id="accOpenCount">0</div></div>
-  <div class="acc-item"><div class="lbl">Leverage</div><div class="val mono" id="accLeverage">—</div></div>
+  <div class="acc-item"><div class="lbl">Currency</div><div class="val mono" id="accCurrency">—</div></div>
+  <div class="acc-item"><div class="lbl">Open Positions</div><div class="val mono" id="accOpen">0</div></div>
+  <div class="acc-item"><div class="lbl">Total P/L</div><div class="val mono" id="accPL">—</div></div>
   <div class="spacer"></div>
   <span class="demo-badge" id="accTypeBadge">—</span>
 </section>
 
-<!-- ========== MAIN ========== -->
+<!-- MAIN -->
 <main class="main">
   <div id="bootBanner" class="empty-state">
     <div class="big">⚙️</div>
-    <h3>مرحباً بك في TradeRadar PRO MAX — TickerAll</h3>
-    <p style="margin-bottom:14px">أضف مفتاح TickerAll ورقم الحساب للبدء</p>
+    <h3>مرحباً بك في TradeRadar PRO — Deriv</h3>
+    <p style="margin-bottom:14px">أضف App ID و API Token من Deriv للبدء</p>
     <button class="btn primary" id="btnOpenSettings1">⚙️ فتح الإعدادات</button>
   </div>
 
   <div id="appContent" class="hidden">
-
-    <!-- SYMBOL CARDS -->
     <section class="cards-grid" id="cardsGrid"></section>
 
-    <!-- CHARTS + SIGNAL -->
     <section class="content-grid">
       <div class="panel">
         <div class="panel-head">
@@ -259,7 +248,6 @@ td.mono{font-family:'JetBrains Mono',monospace}
       </div>
     </section>
 
-    <!-- POSITIONS -->
     <section class="panel">
       <div class="panel-head">
         <span class="panel-title">📊 المراكز المفتوحة</span>
@@ -270,7 +258,6 @@ td.mono{font-family:'JetBrains Mono',monospace}
       <div class="panel-body" id="positionsPanel"></div>
     </section>
 
-    <!-- JOURNAL -->
     <section class="panel">
       <div class="panel-head">
         <span class="panel-title">📒 سجل التداول</span>
@@ -281,18 +268,16 @@ td.mono{font-family:'JetBrains Mono',monospace}
       </div>
       <div class="panel-body" id="journalPanel"></div>
     </section>
-
   </div>
 </main>
 
-<!-- ROOTS -->
 <div class="toasts" id="toastsRoot"></div>
 <div id="modalsRoot"></div>
 
 <script>
 /* ==========================================================================
-   TradeRadar PRO MAX — TickerAll MT5 Demo Auto-Trader
-   Single-file app. All modules inside one IIFE.
+   TradeRadar PRO — Deriv WebSocket Auto-Trader
+   Single-file app. One IIFE, one App namespace.
    ========================================================================== */
 (function(){
 'use strict';
@@ -356,7 +341,6 @@ const UTIL = {
 
 /* ===================== 2. LOGGER ===================== */
 const Logger = {
-  info(...a){ console.log(...a); },
   data(...a){ console.log('🔵', ...a); },
   signal(...a){ console.log('🟢', ...a); },
   auto(...a){ console.log('🤖', ...a); },
@@ -368,52 +352,54 @@ const Logger = {
 
 /* ===================== 3. CONFIG ===================== */
 const CONFIG = {
-  STORE_SETTINGS: 'tradeRadarTickerAllSettings_v1',
-  STORE_JOURNAL: 'tradeRadarTickerAllJournal_v1',
-  STORE_PATHS: 'tradeRadarTickerAllPaths_v1',
+  STORE_SETTINGS: 'tradeRadarDerivSettings_v1',
+  STORE_JOURNAL: 'tradeRadarDerivJournal_v1',
+  WS_URL: 'wss://ws.derivws.com/websockets/v3',
   DEFAULTS: {
     _v: 1,
-    apiKey: '',
-    accountId: '474537218',
-    server: 'Exness-MT5Trial15',
-    goldSymbol: 'XAUUSDm',
-    nasdaqSymbol: 'US100m',
-    euroSymbol: 'EURUSDm',
-    restUrl: 'https://api.tickerall.com',
-    wsUrl: 'wss://api.tickerall.com',
+    appId: '',
+    token: '',
+    accountType: 'DEMO',
+    goldSymbol: 'frxXAUUSD',
+    euroSymbol: 'frxEURUSD',
+    nasdaqSymbol: 'OTC_NDX',
     minScore: 55,
     riskPct: 1.0,
-    maxLot: 1.0,
-    minLot: 0.01,
+    multiplier: 100,
     autoTrade: false,
     timeframe: 'M15',
-    balance: 0
+    realConfirmed: false
   },
   TF: {
-    M5:  { label: 'M5',  ms: 300000 },
-    M15: { label: 'M15', ms: 900000 },
-    H1:  { label: 'H1',  ms: 3600000 },
-    H4:  { label: 'H4',  ms: 14400000 },
-    D1:  { label: 'D1',  ms: 86400000 }
+    M5:  { label: 'M5',  granularity: 300 },
+    M15: { label: 'M15', granularity: 900 },
+    H1:  { label: 'H1',  granularity: 3600 },
+    H4:  { label: 'H4',  granularity: 14400 },
+    D1:  { label: 'D1',  granularity: 86400 }
   },
-  // Point size & value per lot (best-effort defaults; user can adjust if needed)
-  POINT: {
-    XAUUSDm: { point: 0.01,  valuePerLot: 1.0 },
-    EURUSDm: { point: 0.00001, valuePerLot: 1.0 },
-    US100m:  { point: 0.1,   valuePerLot: 0.1 },
-    NAS100m: { point: 0.1,   valuePerLot: 0.1 },
-    USTECm:  { point: 0.1,   valuePerLot: 0.1 },
-    NDXm:    { point: 0.1,   valuePerLot: 0.1 }
+  // Digits per symbol family
+  DIGITS: {
+    'frxXAUUSD': 2,
+    'frxEURUSD': 5,
+    'OTC_NDX': 2,
+    'OTC_US100': 2,
+    'OTC_USTEC': 2
+  },
+  NASDAQ_CANDIDATES: ['OTC_NDX', 'OTC_US100', 'OTC_USTEC', 'OTC_NDX100'],
+  TV_SYMBOL: {
+    'frxXAUUSD': 'OANDA:XAUUSD',
+    'frxEURUSD': 'FX:EURUSD',
+    'OTC_NDX': 'NASDAQ:NDX',
+    'OTC_US100': 'NASDAQ:NDX',
+    'OTC_USTEC': 'NASDAQ:NDX'
   }
 };
 
 /* ===================== 4. Store ===================== */
 const Store = {
   get(key, fb=null){
-    try{
-      const v = localStorage.getItem(key);
-      return v == null ? fb : JSON.parse(v);
-    } catch(e){ return fb; }
+    try{ const v = localStorage.getItem(key); return v == null ? fb : JSON.parse(v); }
+    catch(e){ return fb; }
   },
   set(key, val){
     try{ localStorage.setItem(key, JSON.stringify(val)); return true; }
@@ -426,23 +412,29 @@ const Store = {
 const App = {
   settings: null,
   journal: { trades: [] },
+  ws: null,
+  wsReady: false,
+  wsAuth: false,
+  reqId: 1,
+  pending: {},         // reqId -> { resolve, reject, timer }
+  subscriptions: {},   // key -> reqId
+  activeSymbols: [],
   account: null,
   positions: [],
-  prices: {},        // symbol -> { bid, ask, prevBid, prevAsk, ts }
-  spark: {},         // symbol -> [prices]
-  candles: {},       // symbol -> bars
-  indicators: {},    // symbol -> indicators
-  signals: {},       // symbol -> signal
-  activeSymbol: 'gold',
+  prices: {},          // symbol -> { bid, ask, mid, prevMid, ts, epoch }
+  spark: {},           // symbol -> [mid...]
+  candles: {},         // symbol -> [{time,open,high,low,close}]
+  indicators: {},      // symbol -> indicators
+  signals: {},         // symbol -> signal
+  activeSlot: 'gold',
   activeTimeframe: 'M15',
   booted: false,
-  _candleTimer: null,
-  _accountTimer: null,
-  _positionsTimer: null,
-  _pricePollTimer: null,
-  _signalTimer: null,
+  autoTrade: { active: false, contractType: null },  // detected: 'MULT' | 'CALL'
+  _reconnectTimer: null,
+  _pingTimer: null,
+  _portfolioTimer: null,
   _lastAutoTradeAt: {},
-  _lastSignalAlert: {}
+  _realConfirmed: false
 };
 App.saveSettings = function(){
   App.settings._v = 1;
@@ -452,332 +444,215 @@ App.loadSettings = function(){
   const s = Store.get(CONFIG.STORE_SETTINGS, null);
   App.settings = (s && s._v === 1) ? { ...CONFIG.DEFAULTS, ...s } : { ...CONFIG.DEFAULTS };
   App.activeTimeframe = App.settings.timeframe || 'M15';
+  App._realConfirmed = !!App.settings.realConfirmed;
 };
 
-/* ===================== 6. Path Cache ===================== */
-const PathCache = {
-  _data: {},
-  load(){ this._data = Store.get(CONFIG.STORE_PATHS, {}); },
-  save(){ Store.set(CONFIG.STORE_PATHS, this._data); },
-  get(name){ return this._data[name] || null; },
-  set(name, cand){ this._data[name] = cand; this.save(); },
-  clear(){ this._data = {}; this.save(); }
-};
-
-/* ===================== 7. HTTP helpers ===================== */
-async function httpCall(method, url, body, extraHeaders){
-  const opts = {
-    method,
-    headers: {
-      'Authorization': 'Bearer ' + (App.settings.apiKey || ''),
-      'Content-Type': 'application/json',
-      'Accept': 'application/json',
-      ...(extraHeaders || {})
-    }
-  };
-  if(body != null) opts.body = JSON.stringify(body);
-  const res = await fetch(url, opts);
-  const text = await res.text();
-  let data;
-  try{ data = text ? JSON.parse(text) : null; } catch(e){ data = text; }
-  return { status: res.status, ok: res.ok, data, raw: text };
-}
-
-/**
- * Try candidates in order. Cache first that works.
- * candidates = [{ method, path, body? }]
- */
-async function apiTry(name, candidates){
-  const base = (App.settings.restUrl || '').replace(/\/+$/,'');
-  const cached = PathCache.get(name);
-  const list = cached
-    ? [cached, ...candidates.filter(c => c.path !== cached.path || c.method !== cached.method)]
-    : [...candidates];
-
-  let last = { status: 0, error: 'no_candidate_succeeded' };
-  for(const c of list){
-    const url = c.path.startsWith('http') ? c.path : (base + c.path);
-    try{
-      const r = await httpCall(c.method || 'GET', url, c.body);
-      if(r.status === 404){
-        Logger.warn(`[${name}] 404 on ${c.method} ${c.path}`);
-        last = { status: 404, data: r.data };
-        continue;
-      }
-      // Auth errors: stop immediately, don't try other paths
-      if(r.status === 401 || r.status === 403){
-        Logger.error(`[${name}] Auth failure (${r.status}) on ${c.path}`, r.data);
-        return { ok: false, status: r.status, data: r.data, path: c.path };
-      }
-      if(!r.ok){
-        Logger.error(`[${name}] HTTP ${r.status} on ${c.path}`, r.data);
-        last = { status: r.status, data: r.data };
-        continue;
-      }
-      // Success
-      PathCache.set(name, c);
-      Logger.data(`[${name}] OK via ${c.method} ${c.path}`);
-      return { ok: true, status: r.status, data: r.data, path: c.path };
-    } catch(e){
-      Logger.error(`[${name}] network error on ${c.path}`, e.message);
-      last = { status: 0, error: e.message };
-    }
-  }
-  return { ok: false, ...last };
-}
-
-/* ===================== 8. TickerAll API ===================== */
-const API = {
-
-  /* -------- A) Account info -------- */
-  async getAccount(){
-    return apiTry('account', [
-      { method: 'GET', path: `/accounts/${encodeURIComponent(App.settings.accountId)}` },
-      { method: 'GET', path: `/account/${encodeURIComponent(App.settings.accountId)}` },
-      { method: 'GET', path: `/v1/accounts/${encodeURIComponent(App.settings.accountId)}` }
-    ]);
-  },
-
-  /* -------- B) Open positions -------- */
-  async getPositions(){
-    const acc = encodeURIComponent(App.settings.accountId);
-    return apiTry('positions', [
-      { method: 'GET', path: `/accounts/${acc}/positions` },
-      { method: 'GET', path: `/positions?accountId=${acc}` },
-      { method: 'GET', path: `/accounts/${acc}/open-positions` }
-    ]);
-  },
-
-  /* -------- C) Candles (per symbol) -------- */
-  async getCandles(symbol, tfKey, limit=500){
-    const acc = encodeURIComponent(App.settings.accountId);
-    const sym = encodeURIComponent(symbol);
-    const tf = encodeURIComponent(tfKey);
-    const pathName = `candles:${tfKey}`;
-    return apiTry(pathName, [
-      { method: 'GET', path: `/accounts/${acc}/candles?symbol=${sym}&timeframe=${tf}&limit=${limit}` },
-      { method: 'GET', path: `/candles?symbol=${sym}&timeframe=${tf}&limit=${limit}&accountId=${acc}` },
-      { method: 'GET', path: `/history?symbol=${sym}&timeframe=${tf}&limit=${limit}` },
-      { method: 'GET', path: `/market/candles?symbol=${sym}&timeframe=${tf}&limit=${limit}` }
-    ]);
-  },
-
-  /* -------- D) Place order -------- */
-  async placeOrder(order){
-    const acc = encodeURIComponent(App.settings.accountId);
-    return apiTry('placeOrder', [
-      { method: 'POST', path: `/accounts/${acc}/orders`, body: order },
-      { method: 'POST', path: `/orders`, body: { ...order, accountId: App.settings.accountId } },
-      { method: 'POST', path: `/accounts/${acc}/trade`, body: order }
-    ]);
-  },
-
-  /* -------- E) Close position -------- */
-  async closePosition(ticket){
-    const acc = encodeURIComponent(App.settings.accountId);
-    return apiTry('closePosition', [
-      { method: 'DELETE', path: `/accounts/${acc}/positions/${encodeURIComponent(ticket)}` },
-      { method: 'POST', path: `/accounts/${acc}/positions/${encodeURIComponent(ticket)}/close` },
-      { method: 'POST', path: `/accounts/${acc}/close`, body: { ticket } }
-    ]);
-  },
-
-  /* -------- F) Modify SL/TP -------- */
-  async modifyPosition(ticket, sl, tp){
-    const acc = encodeURIComponent(App.settings.accountId);
-    const body = {};
-    if(sl != null) body.sl = sl;
-    if(tp != null) body.tp = tp;
-    return apiTry('modifyPosition', [
-      { method: 'PUT',   path: `/accounts/${acc}/positions/${encodeURIComponent(ticket)}`, body },
-      { method: 'PATCH', path: `/accounts/${acc}/positions/${encodeURIComponent(ticket)}`, body }
-    ]);
-  },
-
-  /* -------- G) REST price fallback -------- */
-  async getQuotes(symbols){
-    const acc = encodeURIComponent(App.settings.accountId);
-    const list = encodeURIComponent(symbols.join(','));
-    return apiTry('quotes', [
-      { method: 'GET', path: `/accounts/${acc}/quotes?symbols=${list}` },
-      { method: 'GET', path: `/quotes?symbols=${list}&accountId=${acc}` },
-      { method: 'GET', path: `/market/quotes?symbols=${list}` }
-    ]);
-  }
-};
-
-/* ===================== 9. WebSocket ===================== */
-const WS = {
-  socket: null,
-  reconnectDelay: 2000,
-  reconnectTimer: null,
-  logUntil: 0,
-  heartbeatTimer: null,
-  connected: false,
-
+/* ===================== 6. DerivAPI ===================== */
+const DerivAPI = {
   connect(){
-    if(!App.settings.apiKey || !App.settings.wsUrl) return;
-    this.disconnect();
-    Logger.data('WS connecting to', App.settings.wsUrl);
-    let sock;
-    try{
-      sock = new WebSocket(App.settings.wsUrl);
-    } catch(e){
-      Logger.error('WS create failed', e.message);
-      this.scheduleReconnect();
+    if(App.ws){
+      try{ App.ws.close(); }catch(e){}
+      App.ws = null;
+    }
+    if(!App.settings.appId){
+      Logger.warn('No App ID set');
       return;
     }
-    this.socket = sock;
-    this.logUntil = Date.now() + 60000;
+    const url = `${CONFIG.WS_URL}?app_id=${encodeURIComponent(App.settings.appId)}`;
+    UI.setStatus('connecting');
+    Logger.data('WS connecting:', url);
+    let ws;
+    try{ ws = new WebSocket(url); }
+    catch(e){ Logger.error('WS create failed', e.message); UI.setStatus('off'); return; }
+    App.ws = ws;
+    App.wsReady = false;
+    App.wsAuth = false;
 
-    sock.onopen = () => {
-      this.connected = true;
-      this.reconnectDelay = 2000;
+    ws.onopen = () => {
+      App.wsReady = true;
       UI.setStatus('live');
       Logger.data('WS connected');
-      // Auth
-      this.send({ action: 'auth', apiKey: App.settings.apiKey });
-      // Subscribe after 500ms
-      setTimeout(() => {
-        const symbols = this.allSymbols();
-        this.send({
-          action: 'subscribe',
-          accountId: App.settings.accountId,
-          symbols
+      // Start ping
+      clearInterval(App._pingTimer);
+      App._pingTimer = setInterval(() => {
+        DerivAPI.send({ ping: 1 });
+      }, 30000);
+      // Auth if token present
+      if(App.settings.token){
+        DerivAPI.authorize(App.settings.token).catch(e => {
+          Logger.error('Auth on open failed:', e.message);
         });
-        this.send({ action: 'subscribe', symbols });
-      }, 500);
-      // Heartbeat every 15s
-      clearInterval(this.heartbeatTimer);
-      this.heartbeatTimer = setInterval(() => {
-        this.send({ action: 'heartbeat' });
-        this.send({ action: 'ping' });
-      }, 15000);
-      // Stop REST price polling when WS is up
-      if(App._pricePollTimer){ clearInterval(App._pricePollTimer); App._pricePollTimer = null; }
-    };
-
-    sock.onmessage = (ev) => {
-      if(Date.now() < this.logUntil){
-        Logger.ws(ev.data);
-      }
-      try{
-        const msg = JSON.parse(ev.data);
-        this.handle(msg);
-      } catch(e){
-        Logger.warn('WS unparsable:', ev.data);
       }
     };
 
-    sock.onerror = () => Logger.warn('WS error');
+    ws.onmessage = (ev) => {
+      let msg;
+      try{ msg = JSON.parse(ev.data); }
+      catch(e){ Logger.warn('WS unparsable:', ev.data.slice(0,200)); return; }
+      DerivAPI.handle(msg);
+    };
 
-    sock.onclose = () => {
-      this.connected = false;
-      clearInterval(this.heartbeatTimer);
+    ws.onerror = () => Logger.warn('WS error');
+    ws.onclose = () => {
+      App.wsReady = false;
+      App.wsAuth = false;
+      UI.setStatus('off');
       Logger.warn('WS closed');
-      UI.setStatus('poll');
-      this.scheduleReconnect();
-      // Start REST polling fallback
-      this.startRestPolling();
+      clearInterval(App._pingTimer);
+      // Reconnect after 3s
+      clearTimeout(App._reconnectTimer);
+      App._reconnectTimer = setTimeout(() => {
+        if(App.settings.appId) DerivAPI.connect();
+      }, 3000);
     };
-  },
-
-  allSymbols(){
-    return [
-      App.settings.goldSymbol,
-      App.settings.euroSymbol,
-      App.settings.nasdaqSymbol
-    ].filter(Boolean);
   },
 
   send(obj){
-    if(this.socket && this.socket.readyState === WebSocket.OPEN){
-      try{ this.socket.send(JSON.stringify(obj)); }catch(e){}
-    }
-  },
-
-  scheduleReconnect(){
-    clearTimeout(this.reconnectTimer);
-    this.reconnectTimer = setTimeout(() => {
-      this.reconnectDelay = Math.min(this.reconnectDelay * 1.5, 30000);
-      this.connect();
-    }, this.reconnectDelay);
-  },
-
-  disconnect(){
-    clearTimeout(this.reconnectTimer);
-    clearInterval(this.heartbeatTimer);
-    if(this.socket){
-      try{ this.socket.close(); }catch(e){}
-      this.socket = null;
-    }
-    this.connected = false;
-  },
-
-  /* Handle multiple possible message shapes */
-  handle(msg){
-    if(!msg || typeof msg !== 'object') return;
-    const type = (msg.type || msg.event || '').toString().toLowerCase();
-    const symbol = msg.symbol || msg.s;
-
-    // Tick / price / quote
-    if(['tick','price','quote','ticker'].includes(type) && symbol){
-      const bid = num(msg.bid ?? msg.b ?? msg.price ?? msg.last);
-      const ask = num(msg.ask ?? msg.a ?? msg.price ?? msg.last);
-      if(bid != null || ask != null){
-        App.onTick(symbol, { bid, ask, ts: Date.now() });
-        return;
-      }
-    }
-
-    // Positions snapshot
-    if(type === 'positions' || type === 'position'){
-      if(Array.isArray(msg.positions)) { App.onPositions(msg.positions); return; }
-      if(msg.ticket || msg.positionId) { App.onPositionUpdate(msg); return; }
-    }
-
-    // Account snapshot
-    if(type === 'account' || type === 'balance'){
-      App.onAccount(msg);
+    if(!App.ws || App.ws.readyState !== WebSocket.OPEN){
+      Logger.warn('WS not ready, dropping:', obj);
       return;
     }
+    if(obj.req_id == null) obj.req_id = App.reqId++;
+    try{ App.ws.send(JSON.stringify(obj)); }
+    catch(e){ Logger.error('WS send failed', e.message); }
+    return obj.req_id;
   },
 
-  startRestPolling(){
-    if(App._pricePollTimer) return;
-    Logger.data('Starting REST price polling (fallback)');
-    const poll = async () => {
-      if(this.connected) return;
-      try{
-        const symbols = this.allSymbols();
-        const r = await API.getQuotes(symbols);
-        if(!r.ok) return;
-        const arr = Array.isArray(r.data) ? r.data : (r.data && r.data.quotes) || [];
-        for(const q of arr){
-          const sym = q.symbol || q.s;
-          if(!sym) continue;
-          const bid = num(q.bid ?? q.b ?? q.price);
-          const ask = num(q.ask ?? q.a ?? q.price);
-          if(bid != null || ask != null){
-            App.onTick(sym, { bid, ask, ts: Date.now() });
-          }
-        }
-      } catch(e){
-        Logger.warn('Quote poll failed', e.message);
+  request(obj, timeoutMs=15000){
+    return new Promise((resolve, reject) => {
+      const reqId = App.reqId++;
+      obj.req_id = reqId;
+      const timer = setTimeout(() => {
+        delete App.pending[reqId];
+        reject(new Error('timeout'));
+      }, timeoutMs);
+      App.pending[reqId] = { resolve, reject, timer };
+      if(!App.ws || App.ws.readyState !== WebSocket.OPEN){
+        clearTimeout(timer);
+        delete App.pending[reqId];
+        reject(new Error('WS not ready'));
+        return;
       }
-    };
-    App._pricePollTimer = setInterval(poll, 3000);
-    poll();
+      try{ App.ws.send(JSON.stringify(obj)); }
+      catch(e){
+        clearTimeout(timer);
+        delete App.pending[reqId];
+        reject(e);
+      }
+    });
+  },
+
+  handle(msg){
+    Logger.ws(msg.msg_type || '?', msg.error ? 'ERROR:' + msg.error.code : '');
+    // Pending request match
+    if(msg.req_id != null && App.pending[msg.req_id]){
+      const p = App.pending[msg.req_id];
+      clearTimeout(p.timer);
+      delete App.pending[msg.req_id];
+      if(msg.error){
+        p.reject(Object.assign(new Error(msg.error.message || msg.error.code), { code: msg.error.code, raw: msg.error }));
+      } else {
+        p.resolve(msg);
+      }
+    }
+    // Route by msg_type
+    const t = msg.msg_type;
+    try{
+      if(t === 'tick' && msg.tick) App.onTick(msg.tick);
+      else if(t === 'candles' && msg.candles) App.onCandles(msg);
+      else if(t === 'balance' && msg.balance) App.onBalance(msg.balance);
+      else if(t === 'portfolio' && msg.portfolio) App.onPortfolio(msg.portfolio);
+      else if(t === 'proposal_open_contract' && msg.proposal_open_contract) App.onOpenContract(msg.proposal_open_contract);
+      else if(t === 'buy' && msg.buy) App.onBuy(msg.buy);
+      else if(t === 'sell' && msg.sell) App.onSell(msg.sell);
+      else if(t === 'authorize' && msg.authorize) App.onAuthorize(msg.authorize);
+      else if(t === 'active_symbols' && msg.active_symbols) App.onActiveSymbols(msg.active_symbols);
+    } catch(e){
+      Logger.error('handle error for', t, e.message);
+    }
+  },
+
+  /* ---- Auth ---- */
+  async authorize(token){
+    Logger.data('Authorizing...');
+    const r = await this.request({ authorize: token });
+    App.wsAuth = true;
+    App.onAuthorize(r.authorize);
+    Logger.data('Authorized:', r.authorize.loginid);
+    // Subscribe balance + portfolio
+    this.send({ balance: 1, subscribe: 1 });
+    this.send({ portfolio: 1 });
+    return r.authorize;
+  },
+
+  /* ---- Active symbols ---- */
+  fetchActiveSymbols(){
+    return this.request({ active_symbols: 'brief', product_type: 'basic' });
+  },
+
+  /* ---- Ticks ---- */
+  subscribeTicks(symbol){
+    const key = 'tick:' + symbol;
+    if(App.subscriptions[key]) return;
+    const reqId = this.send({ ticks: symbol, subscribe: 1 });
+    if(reqId != null) App.subscriptions[key] = reqId;
+    Logger.data('Subscribed ticks:', symbol);
+  },
+
+  /* ---- Candles ---- */
+  subscribeCandles(symbol, granularity){
+    const key = `candles:${symbol}:${granularity}`;
+    if(App.subscriptions[key]) return;
+    const reqId = this.send({
+      ticks_history: symbol,
+      adjust_start_time: 1,
+      count: 300,
+      end: 'latest',
+      granularity,
+      style: 'candles',
+      subscribe: 1
+    });
+    if(reqId != null) App.subscriptions[key] = reqId;
+    Logger.data('Subscribed candles:', symbol, granularity);
+  },
+
+  /* ---- Proposal + Buy ---- */
+  async getProposal(params){
+    return this.request({
+      proposal: 1,
+      amount: params.amount,
+      basis: 'stake',
+      contract_type: params.contractType,
+      currency: params.currency || 'USD',
+      underlying_symbol: params.symbol,
+      multiplier: params.multiplier,
+      limit_order: params.limitOrder || undefined
+    }, 20000);
+  },
+
+  async buyContract(proposalId, price){
+    return this.request({ buy: proposalId, price }, 20000);
+  },
+
+  async sellContract(contractId){
+    return this.request({ sell: contractId, price: 0 }, 15000);
+  },
+
+  async subscribeOpenContract(contractId){
+    return this.request({
+      proposal_open_contract: 1,
+      contract_id: contractId,
+      subscribe: 1
+    }, 15000);
+  },
+
+  /* ---- Portfolio ---- */
+  getPortfolio(){
+    return this.request({ portfolio: 1 }, 15000);
   }
 };
 
-function num(v){
-  if(v == null) return null;
-  const n = Number(v);
-  return isFinite(n) ? n : null;
-}
-
-/* ===================== 10. Indicators ===================== */
+/* ===================== 7. Indicators ===================== */
 const Ind = {
   ema(arr, period){
     const out = new Array(arr.length).fill(null);
@@ -785,8 +660,8 @@ const Ind = {
     const k = 2 / (period + 1);
     let sum = 0;
     for(let i = 0; i < period; i++) sum += arr[i];
-    out[period - 1] = sum / period;
-    for(let i = period; i < arr.length; i++) out[i] = arr[i] * k + out[i-1] * (1 - k);
+    out[period-1] = sum / period;
+    for(let i = period; i < arr.length; i++) out[i] = arr[i]*k + out[i-1]*(1-k);
     return out;
   },
   sma(arr, period){
@@ -795,8 +670,8 @@ const Ind = {
     let sum = 0;
     for(let i = 0; i < arr.length; i++){
       sum += arr[i];
-      if(i >= period) sum -= arr[i - period];
-      if(i >= period - 1) out[i] = sum / period;
+      if(i >= period) sum -= arr[i-period];
+      if(i >= period-1) out[i] = sum / period;
     }
     return out;
   },
@@ -809,21 +684,21 @@ const Ind = {
       if(d > 0) g += d; else l -= d;
     }
     g /= period; l /= period;
-    out[period] = l === 0 ? 100 : 100 - 100 / (1 + g / l);
-    for(let i = period + 1; i < closes.length; i++){
+    out[period] = l === 0 ? 100 : 100 - 100 / (1 + g/l);
+    for(let i = period+1; i < closes.length; i++){
       const d = closes[i] - closes[i-1];
       const gain = d > 0 ? d : 0;
       const loss = d < 0 ? -d : 0;
-      g = (g * (period - 1) + gain) / period;
-      l = (l * (period - 1) + loss) / period;
-      out[i] = l === 0 ? 100 : 100 - 100 / (1 + g / l);
+      g = (g * (period-1) + gain) / period;
+      l = (l * (period-1) + loss) / period;
+      out[i] = l === 0 ? 100 : 100 - 100 / (1 + g/l);
     }
     return out;
   },
   macd(closes, f=12, s=26, sig=9){
     const ef = this.ema(closes, f);
     const es = this.ema(closes, s);
-    const macd = closes.map((_, i) => (ef[i] != null && es[i] != null) ? ef[i] - es[i] : null);
+    const macd = closes.map((_,i) => (ef[i] != null && es[i] != null) ? ef[i]-es[i] : null);
     const macdClean = macd.map(v => v == null ? 0 : v);
     const signal = this.ema(macdClean, sig);
     const hist = macd.map((v,i) => v != null && signal[i] != null ? v - signal[i] : null);
@@ -834,13 +709,13 @@ const Ind = {
     const upper = new Array(closes.length).fill(null);
     const lower = new Array(closes.length).fill(null);
     const bw = new Array(closes.length).fill(null);
-    for(let i = period - 1; i < closes.length; i++){
+    for(let i = period-1; i < closes.length; i++){
       let sum = 0;
-      for(let j = i - period + 1; j <= i; j++) sum += Math.pow(closes[j] - mid[i], 2);
-      const sd = Math.sqrt(sum / period);
-      upper[i] = mid[i] + mult * sd;
-      lower[i] = mid[i] - mult * sd;
-      bw[i] = mid[i] !== 0 ? (upper[i] - lower[i]) / mid[i] * 100 : 0;
+      for(let j = i-period+1; j <= i; j++) sum += Math.pow(closes[j] - mid[i], 2);
+      const sd = Math.sqrt(sum/period);
+      upper[i] = mid[i] + mult*sd;
+      lower[i] = mid[i] - mult*sd;
+      bw[i] = mid[i] !== 0 ? (upper[i]-lower[i])/mid[i]*100 : 0;
     }
     return { upper, mid, lower, bandwidth: bw };
   },
@@ -848,27 +723,27 @@ const Ind = {
     const n = closes.length;
     const tr = new Array(n).fill(0);
     for(let i = 0; i < n; i++){
-      if(i === 0) tr[i] = highs[i] - lows[i];
-      else tr[i] = Math.max(highs[i] - lows[i], Math.abs(highs[i] - closes[i-1]), Math.abs(lows[i] - closes[i-1]));
+      if(i === 0) tr[i] = highs[i]-lows[i];
+      else tr[i] = Math.max(highs[i]-lows[i], Math.abs(highs[i]-closes[i-1]), Math.abs(lows[i]-closes[i-1]));
     }
     const out = new Array(n).fill(null);
     if(n < period) return out;
     let sum = 0;
     for(let i = 0; i < period; i++) sum += tr[i];
-    out[period - 1] = sum / period;
-    for(let i = period; i < n; i++) out[i] = (out[i-1] * (period - 1) + tr[i]) / period;
+    out[period-1] = sum / period;
+    for(let i = period; i < n; i++) out[i] = (out[i-1]*(period-1) + tr[i])/period;
     return out;
   },
   stochastic(highs, lows, closes, k=14, d=3, smooth=3){
     const n = closes.length;
     const rawK = new Array(n).fill(null);
-    for(let i = k - 1; i < n; i++){
+    for(let i = k-1; i < n; i++){
       let hh = -Infinity, ll = Infinity;
-      for(let j = i - k + 1; j <= i; j++){
+      for(let j = i-k+1; j <= i; j++){
         if(highs[j] > hh) hh = highs[j];
         if(lows[j] < ll) ll = lows[j];
       }
-      rawK[i] = hh - ll !== 0 ? (closes[i] - ll) / (hh - ll) * 100 : 50;
+      rawK[i] = hh-ll !== 0 ? (closes[i]-ll)/(hh-ll)*100 : 50;
     }
     const kClean = rawK.map(v => v == null ? 50 : v);
     const kS = this.sma(kClean, smooth);
@@ -877,7 +752,7 @@ const Ind = {
   }
 };
 
-/* ===================== 11. Patterns & Structure ===================== */
+/* ===================== 8. Patterns ===================== */
 const Patterns = {
   body(b){ return Math.abs(b.close - b.open); },
   range(b){ return b.high - b.low; },
@@ -892,24 +767,22 @@ const Patterns = {
     const out = [];
     const bodyB = this.body(b), rngB = this.range(b) || 1e-9;
     const uw = this.upperWick(b), lw = this.lowerWick(b);
-    const bodyP = this.body(p), rngP = this.range(p) || 1e-9;
-
-    if(bodyB / rngB < 0.1) out.push({ name: 'Doji', side: 'neutral' });
-    if(lw > bodyB * 2 && uw < bodyB * 0.8 && bodyB / rngB < 0.4) out.push({ name: 'Hammer', side: 'bull' });
-    if(uw > bodyB * 2 && lw < bodyB * 0.8 && bodyB / rngB < 0.4) out.push({ name: 'Shooting Star', side: 'bear' });
+    if(bodyB/rngB < 0.1) out.push({ name: 'Doji', side: 'neutral' });
+    if(lw > bodyB*2 && uw < bodyB*0.8 && bodyB/rngB < 0.4) out.push({ name: 'Hammer', side: 'bull' });
+    if(uw > bodyB*2 && lw < bodyB*0.8 && bodyB/rngB < 0.4) out.push({ name: 'Shooting Star', side: 'bear' });
     if(this.isBull(b) && this.isBear(p) && b.close > p.open && b.open < p.close) out.push({ name: 'Bullish Engulfing', side: 'bull' });
     if(this.isBear(b) && this.isBull(p) && b.close < p.open && b.open > p.close) out.push({ name: 'Bearish Engulfing', side: 'bear' });
-    if(lw > bodyB * 1.5 && uw < bodyB * 0.5 && bodyB / rngB < 0.35 && this.isBull(b)) out.push({ name: 'Bullish Pin Bar', side: 'bull' });
-    if(uw > bodyB * 1.5 && lw < bodyB * 0.5 && bodyB / rngB < 0.35 && this.isBear(b)) out.push({ name: 'Bearish Pin Bar', side: 'bear' });
+    if(lw > bodyB*1.5 && uw < bodyB*0.5 && bodyB/rngB < 0.35 && this.isBull(b)) out.push({ name: 'Bullish Pin Bar', side: 'bull' });
+    if(uw > bodyB*1.5 && lw < bodyB*0.5 && bodyB/rngB < 0.35 && this.isBear(b)) out.push({ name: 'Bearish Pin Bar', side: 'bear' });
     return out;
   },
 
   swingPoints(bars, lookback=20){
     const n = bars.length;
     const highs = [], lows = [];
-    for(let i = lookback; i < n - lookback; i++){
+    for(let i = lookback; i < n-lookback; i++){
       let isH = true, isL = true;
-      for(let j = i - lookback; j <= i + lookback; j++){
+      for(let j = i-lookback; j <= i+lookback; j++){
         if(j === i) continue;
         if(bars[j].high >= bars[i].high) isH = false;
         if(bars[j].low <= bars[i].low) isL = false;
@@ -922,21 +795,16 @@ const Patterns = {
 
   structure(bars, lookback=20){
     const sw = this.swingPoints(bars, lookback);
-    const n = bars.length;
-    const last = bars[n-1];
-
-    // Detect BOS / CHoCH using latest confirmed swings
+    const last = bars[bars.length-1];
     const lastHigh = sw.highs.length ? sw.highs[sw.highs.length-1] : null;
-    const lastLow  = sw.lows.length  ? sw.lows[sw.lows.length-1]  : null;
+    const lastLow = sw.lows.length ? sw.lows[sw.lows.length-1] : null;
     const bos = { bull: false, bear: false };
     if(lastHigh && last.close > lastHigh.price) bos.bull = true;
-    if(lastLow  && last.close < lastLow.price)  bos.bear = true;
-
-    // Simple HH/HL vs LH/LL
+    if(lastLow && last.close < lastLow.price) bos.bear = true;
     let trend = 'neutral';
     if(sw.highs.length >= 2 && sw.lows.length >= 2){
       const h1 = sw.highs[sw.highs.length-2].price, h2 = lastHigh.price;
-      const l1 = sw.lows[sw.lows.length-2].price,  l2 = lastLow.price;
+      const l1 = sw.lows[sw.lows.length-2].price, l2 = lastLow.price;
       if(h2 > h1 && l2 > l1) trend = 'up';
       else if(h2 < h1 && l2 < l1) trend = 'down';
     }
@@ -944,22 +812,22 @@ const Patterns = {
   }
 };
 
-/* ===================== 12. Strategy ===================== */
+/* ===================== 9. Strategy ===================== */
 const Strategy = {
   compute(bars){
     const closes = bars.map(b => b.close);
-    const highs  = bars.map(b => b.high);
-    const lows   = bars.map(b => b.low);
+    const highs = bars.map(b => b.high);
+    const lows = bars.map(b => b.low);
     return {
-      ema9:   Ind.ema(closes, 9),
-      ema21:  Ind.ema(closes, 21),
-      ema50:  Ind.ema(closes, 50),
+      ema9: Ind.ema(closes, 9),
+      ema21: Ind.ema(closes, 21),
+      ema50: Ind.ema(closes, 50),
       ema200: Ind.ema(closes, 200),
-      rsi:    Ind.rsi(closes, 14),
-      macd:   Ind.macd(closes),
-      bb:     Ind.bollinger(closes, 20, 2),
-      atr:    Ind.atr(highs, lows, closes, 14),
-      stoch:  Ind.stochastic(highs, lows, closes, 14, 3, 3)
+      rsi: Ind.rsi(closes, 14),
+      macd: Ind.macd(closes),
+      bb: Ind.bollinger(closes, 20, 2),
+      atr: Ind.atr(highs, lows, closes, 14),
+      stoch: Ind.stochastic(highs, lows, closes, 14, 3, 3)
     };
   },
 
@@ -967,7 +835,7 @@ const Strategy = {
     if(!bars || bars.length < 200) return null;
     const ind = this.compute(bars);
     const n = bars.length;
-    const i = n - 1;
+    const i = n-1;
     const price = bars[i].close;
     const atr = ind.atr[i];
     if(atr == null || !isFinite(atr) || atr <= 0) return null;
@@ -979,10 +847,9 @@ const Strategy = {
     // 1) Trend alignment (+25)
     const trendUp = ind.ema9[i] > ind.ema21[i] && ind.ema21[i] > ind.ema50[i] && ind.ema50[i] > ind.ema200[i];
     const trendDn = ind.ema9[i] < ind.ema21[i] && ind.ema21[i] < ind.ema50[i] && ind.ema50[i] < ind.ema200[i];
-    if(trendUp){ score += 25; direction = 'BUY';  reasons.push('ترتيب EMA صاعد'); }
-    else if(trendDn){ score += 25; direction = 'SELL'; reasons.push('ترتيب EMA هابط'); }
+    if(trendUp){ score += 25; direction = 'BUY'; reasons.push('ترتيب EMA صاعد (9>21>50>200)'); }
+    else if(trendDn){ score += 25; direction = 'SELL'; reasons.push('ترتيب EMA هابط (9<21<50<200)'); }
     else {
-      // partial trend
       if(ind.ema9[i] > ind.ema21[i] && ind.ema21[i] > ind.ema50[i]){ score += 15; direction = direction || 'BUY'; reasons.push('EMA قصير صاعد'); }
       if(ind.ema9[i] < ind.ema21[i] && ind.ema21[i] < ind.ema50[i]){ score += 15; direction = direction || 'SELL'; reasons.push('EMA قصير هابط'); }
     }
@@ -994,7 +861,7 @@ const Strategy = {
       else if(rsiV > 70 && bars[i].close < bars[i-1].close){ score += 15; direction = direction || 'SELL'; reasons.push(`RSI=${rsiV.toFixed(1)} تشبع شرائي + ارتداد`); }
     }
 
-    // 3) MACD cross + histogram (+20)
+    // 3) MACD (+20)
     const mh = ind.macd.hist[i], mhp = ind.macd.hist[i-1];
     if(mh != null && mhp != null){
       if(mh > 0 && mh > mhp){ score += 20; direction = direction || 'BUY'; reasons.push('MACD إيجابي متزايد'); }
@@ -1020,7 +887,7 @@ const Strategy = {
       else if(crossDn && sk > 70){ score += 10; direction = direction || 'SELL'; reasons.push('Stoch تقاطع هابط في OS'); }
     }
 
-    // 6) Candlestick at S/R (+15)
+    // 6) Pattern at S/R (+15)
     const struct = Patterns.structure(bars, 15);
     const pats = Patterns.detect(bars, i);
     const nearSR = this.isNearSR(price, struct, atr);
@@ -1047,13 +914,13 @@ const Strategy = {
     else if(score >= 70) tier = 'STRONG';
     else if(score >= 55) tier = 'MEDIUM';
 
-    // ---- Trade levels (ATR-based) ----
+    // Trade levels (ATR-based)
     const entry = price;
     const dir = direction;
-    const sl  = dir === 'BUY' ? entry - 1.5 * atr : entry + 1.5 * atr;
-    const tp1 = dir === 'BUY' ? entry + 1.5 * atr : entry - 1.5 * atr;
-    const tp2 = dir === 'BUY' ? entry + 2.5 * atr : entry - 2.5 * atr;
-    const tp3 = dir === 'BUY' ? entry + 4.0 * atr : entry - 4.0 * atr;
+    const sl  = dir === 'BUY' ? entry - 1.5*atr : entry + 1.5*atr;
+    const tp1 = dir === 'BUY' ? entry + 1.5*atr : entry - 1.5*atr;
+    const tp2 = dir === 'BUY' ? entry + 2.5*atr : entry - 2.5*atr;
+    const tp3 = dir === 'BUY' ? entry + 4.0*atr : entry - 4.0*atr;
 
     return {
       symbol, direction: dir, score, tier,
@@ -1078,33 +945,30 @@ const Strategy = {
   }
 };
 
-/* ===================== 13. Position Sizing ===================== */
-const Sizing = {
-  calc(signal){
-    const bal = Number(App.account?.balance ?? App.settings.balance ?? 0);
-    if(!bal || bal <= 0) return { lots: App.settings.minLot, reason: 'no_balance' };
+/* ===================== 10. Risk ===================== */
+const Risk = {
+  calcStake(signal){
+    const bal = Number(App.account?.balance ?? 0);
+    if(!bal || bal <= 0) return { stake: 1, reason: 'no_balance' };
+    let stake = bal * (App.settings.riskPct / 100);
+    stake = Math.max(1, Math.round(stake * 100) / 100); // min $1, 2dp
+    return { stake, reason: 'ok' };
+  },
 
-    const symCfg = CONFIG.POINT[signal.symbol] || { point: 0.01, valuePerLot: 1.0 };
-    const point = symCfg.point;
-    const valuePerLot = symCfg.valuePerLot;
-
-    const slDist = Math.abs(signal.entry - signal.sl);
-    if(slDist <= 0) return { lots: App.settings.minLot, reason: 'zero_sl' };
-    const slPoints = slDist / point;
-
-    const riskAmount = bal * (App.settings.riskPct / 100);
-    let lots = riskAmount / (slPoints * valuePerLot);
-    if(!isFinite(lots) || lots <= 0) lots = App.settings.minLot;
-
-    // Round to 0.01 step
-    lots = Math.floor(lots * 100) / 100;
-    lots = UTIL.clamp(lots, App.settings.minLot, App.settings.maxLot);
-
-    return { lots, riskAmount, slPoints, point, valuePerLot, reason: 'ok' };
+  calcLimitOrder(signal, stake, multiplier){
+    // Convert price distances to monetary amounts for MULT limit_order
+    const entry = signal.entry;
+    const slDist = Math.abs(signal.sl - entry);
+    const tpDist = Math.abs(signal.tp2 - entry); // use TP2 as broker TP
+    const slPct = slDist / entry;
+    const tpPct = tpDist / entry;
+    const stopLoss = Math.round(stake * slPct * multiplier * 100) / 100;
+    const takeProfit = Math.round(stake * tpPct * multiplier * 100) / 100;
+    return { stop_loss: stopLoss, take_profit: takeProfit };
   }
 };
 
-/* ===================== 14. Journal ===================== */
+/* ===================== 11. Journal ===================== */
 const Journal = {
   load(){
     const d = Store.get(CONFIG.STORE_JOURNAL, null);
@@ -1113,12 +977,7 @@ const Journal = {
   },
   save(){ Store.set(CONFIG.STORE_JOURNAL, App.journal); },
   trades(){ return App.journal.trades; },
-
-  add(t){
-    App.journal.trades.unshift(t);
-    this.save();
-    UI.renderJournal();
-  },
+  add(t){ App.journal.trades.unshift(t); this.save(); UI.renderJournal(); },
   update(id, patch){
     const t = App.journal.trades.find(x => x.id === id);
     if(!t) return;
@@ -1131,121 +990,112 @@ const Journal = {
     this.save();
     UI.renderJournal();
   },
-  clear(){
-    App.journal.trades = [];
-    this.save();
-    UI.renderJournal();
-  },
+  clear(){ App.journal.trades = []; this.save(); UI.renderJournal(); },
   stats(){
     const closed = this.trades().filter(t => t.status !== 'OPEN');
     const total = closed.length;
     const wins = closed.filter(t => (t.pnl || 0) > 0);
     const losses = closed.filter(t => (t.pnl || 0) <= 0);
-    const winRate = total ? (wins.length / total) * 100 : 0;
+    const winRate = total ? (wins.length/total)*100 : 0;
     const totalPnl = closed.reduce((s,t) => s + (t.pnl || 0), 0);
     const grossWin = wins.reduce((s,t) => s + (t.pnl || 0), 0);
     const grossLoss = Math.abs(losses.reduce((s,t) => s + (t.pnl || 0), 0));
-    const pf = grossLoss > 0 ? grossWin / grossLoss : (grossWin > 0 ? Infinity : 0);
-    const avgWin = wins.length ? grossWin / wins.length : 0;
-    const avgLoss = losses.length ? grossLoss / losses.length : 0;
-    const expectancy = total ? totalPnl / total : 0;
-    return { total, wins: wins.length, losses: losses.length, winRate, totalPnl, pf, avgWin, avgLoss, expectancy };
+    const pf = grossLoss > 0 ? grossWin/grossLoss : (grossWin > 0 ? Infinity : 0);
+    return { total, wins: wins.length, losses: losses.length, winRate, totalPnl, pf };
   }
 };
 
-/* ===================== 15. AutoTrade ===================== */
+/* ===================== 12. AutoTrade ===================== */
 const AutoTrade = {
-  active: false,
-
   toggle(on){
     if(on){
-      // Safety: only DEMO
-      const type = (App.account?.type || '').toString().toUpperCase();
-      if(type && type !== 'DEMO'){
-        UI.toast('⚠️ TickerAll المجاني يدعم الحسابات التجريبية فقط', 'error');
-        Logger.warn('AutoTrade blocked: account type =', type);
+      const isVirtual = App.account?.is_virtual;
+      if(isVirtual === 0 && !App._realConfirmed){
+        UI.toast('⚠️ أنت على حساب حقيقي — أكّد المخاطر أولاً', 'error');
         return;
       }
-      this.active = true;
-      App.settings.autoTrade = true;
-      App.saveSettings();
+      App.autoTrade.active = true;
     } else {
-      this.active = false;
-      App.settings.autoTrade = false;
-      App.saveSettings();
+      App.autoTrade.active = false;
     }
+    App.settings.autoTrade = App.autoTrade.active;
+    App.saveSettings();
     UI.renderAutoTradeBtn();
   },
 
   async maybeExecute(signal){
-    if(!this.active) return;
+    if(!App.autoTrade.active) return;
     if(!signal || signal.tier === 'NO TRADE') return;
     if(signal.score < App.settings.minScore) return;
 
-    // Only DEMO
-    const type = (App.account?.type || '').toString().toUpperCase();
-    if(type && type !== 'DEMO'){
-      Logger.warn('AutoTrade skip: non-DEMO account');
-      return;
-    }
+    // Real account guard
+    if(App.account?.is_virtual === 0 && !App._realConfirmed) return;
 
     // Cooldown per symbol+direction (10 min)
-    const cooldownKey = signal.symbol + '|' + signal.direction;
-    const last = App._lastAutoTradeAt[cooldownKey] || 0;
-    if(Date.now() - last < 10 * 60 * 1000){
-      Logger.auto(`Cooldown active for ${cooldownKey}`);
+    const key = signal.symbol + '|' + signal.direction;
+    if(Date.now() - (App._lastAutoTradeAt[key] || 0) < 10*60*1000){
+      Logger.auto('Cooldown:', key);
       return;
     }
+    // No duplicate open contract on same symbol
+    const dup = App.positions.find(p => p.symbol === signal.symbol);
+    if(dup){ Logger.auto('Already open:', signal.symbol); return; }
 
-    // No duplicate position on same symbol in same direction
-    const dup = App.positions.find(p => p.symbol === signal.symbol && (p.side||'').toLowerCase() === signal.direction.toLowerCase());
-    if(dup){
-      Logger.auto(`Position already open for ${cooldownKey}`);
-      return;
-    }
+    App._lastAutoTradeAt[key] = Date.now();
 
-    // Sizing
-    const size = Sizing.calc(signal);
-    if(size.reason !== 'ok'){
-      Logger.warn('AutoTrade sizing failed:', size.reason);
-      return;
-    }
+    const stake = Risk.calcStake(signal);
+    if(stake.reason !== 'ok'){ Logger.warn('Sizing failed:', stake.reason); return; }
 
-    App._lastAutoTradeAt[cooldownKey] = Date.now();
+    const contractType = signal.direction === 'BUY' ? 'MULTUP' : 'MULTDOWN';
+    const limitOrder = Risk.calcLimitOrder(signal, stake.stake, App.settings.multiplier);
 
-    const order = {
-      symbol: signal.symbol,
-      side: signal.direction.toLowerCase(),
-      type: 'market',
-      volume: size.lots,
-      sl: +signal.sl.toFixed(5),
-      tp: +signal.tp2.toFixed(5),  // use TP2 as broker TP for full position
-      comment: 'TradeRadar-Auto'
-    };
-    Logger.auto('Placing order', order);
-
-    let res;
+    Logger.auto('Placing proposal:', { symbol: signal.symbol, type: contractType, stake: stake.stake });
+    let proposalResp;
     try{
-      res = await API.placeOrder(order);
+      proposalResp = await DerivAPI.getProposal({
+        amount: stake.stake,
+        contractType,
+        symbol: signal.symbol,
+        multiplier: App.settings.multiplier,
+        limitOrder
+      });
     } catch(e){
-      Logger.error('Order exception', e.message);
-      UI.toast('❌ استثناء في تنفيذ الأمر: ' + e.message, 'error');
+      const msg = translateError(e);
+      Logger.error('Proposal failed:', e.code || e.message, e.raw || '');
+      UI.toast('❌ فشل الطلب: ' + msg, 'error');
       return;
     }
 
-    if(!res.ok){
-      const msg = extractErr(res.data) || `HTTP ${res.status}`;
-      Logger.error('Order failed', res.status, res.data);
+    const proposal = proposalResp.proposal;
+    if(!proposal || !proposal.id){
+      Logger.error('No proposal id', proposalResp);
+      UI.toast('❌ لم يُعد المُقترح', 'error');
+      return;
+    }
+
+    Logger.auto('Buying proposal:', proposal.id, 'ask:', proposal.ask_price);
+    let buyResp;
+    try{
+      buyResp = await DerivAPI.buyContract(proposal.id, proposal.ask_price);
+    } catch(e){
+      const msg = translateError(e);
+      Logger.error('Buy failed:', e.code || e.message, e.raw || '');
       UI.toast('❌ فشل التنفيذ: ' + msg, 'error');
       return;
     }
 
-    Logger.auto('Order response', res.data);
-    const ticket = res.data?.ticket || res.data?.orderId || res.data?.id || ('local-' + UTIL.uid());
+    const contractId = buyResp.buy?.contract_id;
+    if(!contractId){
+      Logger.error('No contract id', buyResp);
+      UI.toast('❌ لم يُعد معرّف العقد', 'error');
+      return;
+    }
+
+    Logger.auto('✅ Contract:', contractId);
 
     Journal.add({
       id: UTIL.uid(),
-      ticket: String(ticket),
+      contractId: String(contractId),
       openedAt: Date.now(),
       closedAt: null,
       symbol: signal.symbol,
@@ -1255,7 +1105,8 @@ const AutoTrade = {
       tp1: signal.tp1,
       tp2: signal.tp2,
       tp3: signal.tp3,
-      volume: size.lots,
+      stake: stake.stake,
+      multiplier: App.settings.multiplier,
       score: signal.score,
       tier: signal.tier,
       atr: signal.atr,
@@ -1267,37 +1118,53 @@ const AutoTrade = {
       source: 'AUTO'
     });
 
-    UI.toast('✅ تم تنفيذ الصفقة: ' + ticket, 'success');
+    UI.toast('✅ عقد #' + contractId + ' نُفّذ', 'success');
     beep();
-    UI.renderPositions();
+    // Subscribe to contract updates
+    DerivAPI.send({ proposal_open_contract: 1, contract_id: contractId, subscribe: 1 });
+    App.refreshPortfolio();
   },
 
   async killSwitch(){
-    Logger.auto('KILL SWITCH triggered');
+    Logger.auto('KILL SWITCH');
     this.toggle(false);
     const positions = App.positions.slice();
     if(!positions.length){
-      UI.toast('🛑 لا توجد مراكز لإغلاقها', 'info');
+      UI.toast('🛑 لا توجد مراكز مفتوحة', 'info');
       return;
     }
     let closed = 0, failed = 0;
     for(const p of positions){
-      const ticket = p.ticket || p.positionId || p.id;
-      if(!ticket){ failed++; continue; }
-      const r = await API.closePosition(ticket);
-      if(r.ok){ closed++; Logger.pos('Closed', ticket); }
-      else { failed++; Logger.error('Failed to close', ticket, r.data); }
+      const cid = p.contract_id;
+      if(!cid){ failed++; continue; }
+      try{
+        await DerivAPI.sellContract(cid);
+        closed++;
+        Logger.pos('Closed', cid);
+      } catch(e){
+        failed++;
+        Logger.error('Close failed', cid, e.message);
+      }
       await UTIL.sleep(200);
     }
-    UI.toast(`🛑 أُغلق ${closed} مركز${failed ? ` · فشل ${failed}` : ''}`, failed ? 'warn' : 'success');
-    await App.refreshPositions();
+    UI.toast(`🛑 أُغلق ${closed} عقد${failed ? ` · فشل ${failed}` : ''}`, failed ? 'warn' : 'success');
+    setTimeout(() => App.refreshPortfolio(), 1000);
   }
 };
 
-function extractErr(data){
-  if(!data) return null;
-  if(typeof data === 'string') return data.slice(0, 200);
-  return data.message || data.error || data.detail || data.msg || JSON.stringify(data).slice(0, 200);
+function translateError(e){
+  const code = e.code || '';
+  const map = {
+    'AuthorizationRequired': 'المفتاح غير صالح أو منتهي',
+    'InvalidToken': 'الرمز غير صحيح — تحقق من Deriv Dashboard',
+    'RateLimit': 'تجاوزت الحد — انتظر قليلاً',
+    'MarketIsClosed': 'السوق مغلق حالياً',
+    'InsufficientBalance': 'الرصيد غير كافٍ',
+    'InvalidSymbol': 'الرمز غير متاح',
+    'ContractCreationFailure': 'فشل إنشاء العقد',
+    'PleaseAuthenticate': 'يجب تسجيل الدخول أولاً'
+  };
+  return map[code] || e.message || code || 'خطأ غير معروف';
 }
 
 function beep(){
@@ -1308,797 +1175,192 @@ function beep(){
       const o = ctx.createOscillator(), g = ctx.createGain();
       o.frequency.value = f;
       o.type = 'sine';
-      g.gain.setValueAtTime(0.0001, now + i * 0.18);
-      g.gain.exponentialRampToValueAtTime(0.12, now + i * 0.18 + 0.02);
-      g.gain.exponentialRampToValueAtTime(0.0001, now + i * 0.18 + 0.18);
+      g.gain.setValueAtTime(0.0001, now + i*0.18);
+      g.gain.exponentialRampToValueAtTime(0.12, now + i*0.18 + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, now + i*0.18 + 0.18);
       o.connect(g).connect(ctx.destination);
-      o.start(now + i * 0.18);
-      o.stop(now + i * 0.18 + 0.2);
+      o.start(now + i*0.18);
+      o.stop(now + i*0.18 + 0.2);
     });
   } catch(e){}
 }
 
-/* ===================== 16. App Logic ===================== */
-App.onTick = function(symbol, tick){
-  const prev = App.prices[symbol];
-  const prevMid = prev ? (prev.bid != null && prev.ask != null ? (prev.bid + prev.ask)/2 : (prev.bid ?? prev.ask)) : null;
-  const mid = (tick.bid != null && tick.ask != null) ? (tick.bid + tick.ask)/2 : (tick.bid ?? tick.ask);
-  App.prices[symbol] = {
-    bid: tick.bid ?? prev?.bid ?? null,
-    ask: tick.ask ?? prev?.ask ?? null,
-    prevBid: prev?.bid ?? null,
-    prevAsk: prev?.ask ?? null,
-    mid,
-    prevMid,
-    ts: tick.ts
+/* ===================== 13. App logic ===================== */
+App.onAuthorize = function(auth){
+  App.account = {
+    ...(App.account || {}),
+    loginid: auth.loginid,
+    currency: auth.currency,
+    balance: parseFloat(auth.balance),
+    is_virtual: auth.is_virtual,
+    landing_company_name: auth.landing_company_name
   };
-  if(!App.spark[symbol]) App.spark[symbol] = [];
-  if(mid != null){
-    App.spark[symbol].push(mid);
-    if(App.spark[symbol].length > 60) App.spark[symbol].shift();
-  }
-  UI.onPriceTick(symbol, mid, prevMid);
+  UI.renderAccount();
+  UI.$('#loginVal').textContent = auth.loginid || '—';
+  Logger.data('Account:', auth.loginid, 'Balance:', auth.balance, 'Virtual:', auth.is_virtual);
 };
 
-App.onAccount = function(data){
-  App.account = { ...(App.account || {}), ...data };
+App.onBalance = function(b){
+  if(!App.account) App.account = {};
+  App.account.balance = parseFloat(b.balance);
+  App.account.currency = b.currency;
+  App.account.loginid = b.loginid;
   UI.renderAccount();
 };
 
-App.onPositions = function(list){
-  App.positions = Array.isArray(list) ? list : [];
+App.onPortfolio = function(p){
+  App.positions = p.contracts || [];
   UI.renderPositions();
   UI.renderAccount();
-};
-
-App.onPositionUpdate = function(pos){
-  const idx = App.positions.findIndex(p => (p.ticket || p.positionId) === (pos.ticket || pos.positionId));
-  if(idx >= 0) App.positions[idx] = { ...App.positions[idx], ...pos };
-  else App.positions.push(pos);
-  UI.renderPositions();
-};
-
-App.refreshAccount = async function(){
-  try{
-    const r = await API.getAccount();
-    if(r.ok && r.data){
-      const d = r.data.data || r.data.account || r.data;
-      App.onAccount(d);
-    } else if(r.status === 401 || r.status === 403){
-      UI.toast('🔑 فشل المصادقة — تحقق من المفتاح', 'error');
+  // Reconcile journal
+  for(const t of App.journal.trades){
+    if(t.status !== 'OPEN') continue;
+    const still = App.positions.find(c => String(c.contract_id) === String(t.contractId));
+    if(!still){
+      t.status = 'CLOSED';
+      t.closedAt = Date.now();
+      t.exitReason = 'Broker';
+      Logger.pos('Reconciled:', t.contractId);
     }
-  } catch(e){
-    Logger.warn('refreshAccount failed', e.message);
+  }
+  Journal.save();
+  UI.renderJournal();
+};
+
+App.onOpenContract = function(c){
+  // Update journal P&L live
+  const t = App.journal.trades.find(x => String(x.contractId) === String(c.contract_id));
+  if(t){
+    t.pnl = parseFloat(c.profit) || 0;
+    t.status = c.is_sold ? 'CLOSED' : 'OPEN';
+    if(c.is_sold){
+      t.closedAt = Date.now();
+      t.exitPrice = parseFloat(c.exit_tick) || null;
+      t.exitReason = c.profit > 0 ? 'TP' : 'SL/Timeout';
+    }
+    Journal.save();
+    UI.renderJournal();
   }
 };
 
-App.refreshPositions = async function(){
-  try{
-    const r = await API.getPositions();
-    if(r.ok){
-      const arr = Array.isArray(r.data) ? r.data :
-                  (r.data.positions || r.data.data || []);
-      App.onPositions(arr);
-      // Reconcile journal: if broker position disappeared, mark journal trade closed
-      for(const t of App.journal.trades){
-        if(t.status !== 'OPEN') continue;
-        const still = App.positions.find(p =>
-          String(p.ticket || p.positionId) === String(t.ticket) ||
-          (p.symbol === t.symbol && (p.side||'').toLowerCase() === t.direction.toLowerCase())
-        );
-        if(!still && t.ticket && !String(t.ticket).startsWith('local-')){
-          // Closed by broker (TP/SL)
-          t.status = 'CLOSED';
-          t.closedAt = Date.now();
-          t.exitReason = 'Broker';
-          t.exitPrice = still?.currentPrice || null;
-          Logger.pos('Journal reconciled', t.ticket);
-        }
+App.onBuy = function(b){
+  Logger.data('Buy ack:', b.contract_id);
+};
+
+App.onSell = function(s){
+  Logger.data('Sell ack:', s.contract_id, 'sold_for:', s.sold_for);
+};
+
+App.onTick = function(tick){
+  const sym = tick.symbol;
+  const bid = num(tick.bid);
+  const ask = num(tick.ask);
+  const mid = bid != null && ask != null ? (bid + ask) / 2 : num(tick.quote);
+  if(mid == null) return;
+  const prev = App.prices[sym];
+  const prevMid = prev?.mid ?? null;
+  App.prices[sym] = { bid, ask, mid, prevMid, epoch: tick.epoch, ts: Date.now() };
+  if(!App.spark[sym]) App.spark[sym] = [];
+  App.spark[sym].push(mid);
+  if(App.spark[sym].length > 60) App.spark[sym].shift();
+  UI.onPriceTick(sym, mid, prevMid);
+};
+
+App.onCandles = function(msg){
+  const sym = msg.echo_req.ticks_history;
+  const granularity = msg.echo_req.granularity;
+  const key = `candles:${sym}:${granularity}`;
+  const raw = msg.candles || [];
+  const bars = raw.map(c => ({
+    time: c.epoch,
+    open: +c.open,
+    high: +c.high,
+    low: +c.low,
+    close: +c.close
+  })).filter(b => isFinite(b.open) && isFinite(b.close));
+  if(!bars.length) return;
+  App.candles[sym] = bars;
+  App.indicators[sym] = Strategy.compute(bars);
+  // Update chart if this is the active symbol
+  if(App.settings[App.activeSlot + 'Symbol'] === sym){
+    ChartEngine.updateNative(bars);
+  }
+  // Recompute signal
+  const sig = Strategy.analyze(bars, sym);
+  if(sig){
+    App.signals[sym] = sig;
+    Logger.signal(`${sym} score=${sig.score} ${sig.tier} ${sig.direction}`);
+    if(sig.score >= 70){
+      const k = sym + '|' + sig.direction;
+      const last = App._lastSignalAlert?.[k] || 0;
+      if(Date.now() - last > 10*60*1000){
+        if(!App._lastSignalAlert) App._lastSignalAlert = {};
+        App._lastSignalAlert[k] = Date.now();
+        UI.toast(`🎯 ${sig.tier}: ${sym} ${sig.direction} (${sig.score})`, 'success');
       }
-      Journal.save();
-      UI.renderJournal();
     }
-  } catch(e){
-    Logger.warn('refreshPositions failed', e.message);
-  }
-};
-
-App.loadCandles = async function(symbol){
-  try{
-    const r = await API.getCandles(symbol, App.activeTimeframe, 500);
-    if(!r.ok){
-      Logger.warn('Candles failed for', symbol, r.status);
-      return null;
-    }
-    const raw = Array.isArray(r.data) ? r.data :
-                (r.data.candles || r.data.data || r.data.values || []);
-    const bars = raw.map(normalizeBar).filter(Boolean);
-    if(!bars.length) return null;
-    App.candles[symbol] = bars;
-    App.indicators[symbol] = Strategy.compute(bars);
-    return bars;
-  } catch(e){
-    Logger.error('loadCandles exception', symbol, e.message);
-    return null;
-  }
-};
-
-function normalizeBar(b){
-  if(!b) return null;
-  const t = b.time ?? b.t ?? b.timestamp ?? b.datetime;
-  const o = num(b.open ?? b.o);
-  const h = num(b.high ?? b.h);
-  const l = num(b.low ?? b.l);
-  const c = num(b.close ?? b.c);
-  const v = num(b.volume ?? b.v) ?? 0;
-  if(o == null || h == null || l == null || c == null) return null;
-  let time = t;
-  if(typeof t === 'string') time = Math.floor(new Date(t.replace(' ', 'T') + (t.endsWith('Z') ? '' : 'Z')).getTime() / 1000);
-  else if(typeof t === 'number' && t > 1e12) time = Math.floor(t / 1000);
-  return { time, open: o, high: h, low: l, close: c, volume: v };
-}
-
-App.recomputeSignals = function(){
-  for(const slot of ['gold','euro','nasdaq']){
-    const sym = App.settings[slot + 'Symbol'];
-    const bars = App.candles[sym];
-    if(!bars) continue;
-    try{
-      const sig = Strategy.analyze(bars, sym);
-      if(sig){
-        const prev = App.signals[sym];
-        App.signals[sym] = sig;
-        Logger.signal(`${sym} score=${sig.score} tier=${sig.tier} dir=${sig.direction}`);
-        // New strong signal alert
-        if(sig.score >= 70){
-          const k = sym + '|' + sig.direction;
-          const last = App._lastSignalAlert[k] || 0;
-          if(Date.now() - last > 10 * 60 * 1000){
-            App._lastSignalAlert[k] = Date.now();
-            UI.toast(`🎯 إشارة ${sig.tier}: ${sym} ${sig.direction} (${sig.score})`, 'success');
-          }
-        }
-        // AutoTrade
-        AutoTrade.maybeExecute(sig);
-      }
-    } catch(e){
-      Logger.error('analyze failed', sym, e.message);
-    }
+    AutoTrade.maybeExecute(sig);
   }
   UI.renderSignal();
   UI.renderCards();
 };
 
-/* ===================== 17. UI ===================== */
-const UI = {
-  _journalFilter: 'all',
-
-  init(){
-    this.buildCards();
-    this.buildTFGroup();
-    this.bindEvents();
-    this.renderAccount();
-    this.renderPositions();
-    this.renderJournal();
-    this.renderAutoTradeBtn();
-    this.updateSymbolsChip();
-  },
-
-  setStatus(state){
-    const d = UTIL.$('#statusDot');
-    d.classList.remove('live','poll','off');
-    d.classList.add(state);
-    d.title = state === 'live' ? 'WebSocket متصل' :
-              state === 'poll' ? 'REST polling' : 'غير متصل';
-  },
-
-  updateSymbolsChip(){
-    const s = App.settings;
-    const v = `${s.goldSymbol} · ${s.euroSymbol} · ${s.nasdaqSymbol}`;
-    UTIL.$('#symbolsVal').textContent = v;
-  },
-
-  buildCards(){
-    const g = UTIL.$('#cardsGrid');
-    g.innerHTML = '';
-    for(const slot of ['gold','euro','nasdaq']){
-      const sym = App.settings[slot + 'Symbol'];
-      const labelMap = { gold: 'الذهب', euro: 'يورو', nasdaq: 'ناسداك' };
-      const card = UTIL.el('div', { class: 'card', 'data-slot': slot, 'data-sym': sym, id: 'card_' + slot },
-        UTIL.el('div', { class: 'card-head' },
-          UTIL.el('div', {},
-            UTIL.el('div', { class: 'card-sym' }, sym),
-            UTIL.el('div', { class: 'card-name' }, labelMap[slot])
-          ),
-          UTIL.el('canvas', { class: 'spark', id: 'spark_' + slot, width: 70, height: 26 })
-        ),
-        UTIL.el('div', { class: 'card-price mono', id: 'price_' + slot }, '—'),
-        UTIL.el('div', { class: 'card-chg', id: 'chg_' + slot }, '—'),
-        UTIL.el('div', { class: 'card-foot' },
-          UTIL.el('span', { class: 'tier none', id: 'tier_' + slot }, 'انتظار'),
-          UTIL.el('div', { class: 'gauge' }, UTIL.el('div', { id: 'gauge_' + slot }))
-        )
-      );
-      card.addEventListener('click', () => this.selectSlot(slot));
-      g.appendChild(card);
-    }
-  },
-
-  buildTFGroup(){
-    const g = UTIL.$('#tfGroup');
-    g.innerHTML = '';
-    for(const k of Object.keys(CONFIG.TF)){
-      const b = UTIL.el('button', { class: 'tf-btn' + (k === App.activeTimeframe ? ' active' : '') }, CONFIG.TF[k].label);
-      b.addEventListener('click', () => this.selectTF(k));
-      g.appendChild(b);
-    }
-  },
-
-  bindEvents(){
-    UTIL.$('#btnSettings').addEventListener('click', () => this.openSettingsModal());
-    UTIL.$('#btnOpenSettings1').addEventListener('click', () => this.openSettingsModal());
-    UTIL.$('#btnAutoTrade').addEventListener('click', () => this.confirmAutoTrade());
-    UTIL.$('#btnKillSwitch').addEventListener('click', () => this.confirmKillSwitch());
-    UTIL.$('#btnRefreshPos').addEventListener('click', () => App.refreshPositions());
-    UTIL.$('#btnCSV').addEventListener('click', () => this.exportCSV());
-    UTIL.$('#btnJSON').addEventListener('click', () => this.exportJSON());
-    UTIL.$('#btnClearJournal').addEventListener('click', () => {
-      if(confirm('مسح كل سجل التداول؟')) Journal.clear();
-    });
-    UTIL.$('#btnChartMode').addEventListener('click', () => this.toggleChartMode());
-
-    // Keyboard
-    document.addEventListener('keydown', (e) => {
-      if(['INPUT','TEXTAREA','SELECT'].includes(e.target.tagName)) return;
-      if(e.key === 'Escape') UTIL.$$('.modal-bg').forEach(m => m.remove());
-    });
-
-    // Clock
-    setInterval(() => {
-      UTIL.$('#utcClock').textContent = UTIL.timeUTC();
-    }, 1000);
-  },
-
-  selectSlot(slot){
-    App.activeSymbol = slot;
-    UTIL.$$('.card').forEach(c => c.classList.toggle('active', c.dataset.slot === slot));
-    const sym = App.settings[slot + 'Symbol'];
-    UTIL.$('#sigSymChip').textContent = sym;
-    this.renderSignal();
-    // Reload charts
-    ChartEngine.reload();
-  },
-
-  async selectTF(tf){
-    App.activeTimeframe = tf;
-    App.settings.timeframe = tf;
-    App.saveSettings();
-    UTIL.$$('#tfGroup .tf-btn').forEach(b => b.classList.toggle('active', b.textContent === CONFIG.TF[tf].label));
-    // Refetch all candles at new TF
-    for(const slot of ['gold','euro','nasdaq']){
-      await App.loadCandles(App.settings[slot + 'Symbol']);
-    }
-    App.recomputeSignals();
-    ChartEngine.reload();
-  },
-
-  toggleChartMode(){
-    const cur = App.settings.chartMode || 'tv';
-    const nxt = cur === 'tv' ? 'native' : 'tv';
-    App.settings.chartMode = nxt;
-    App.saveSettings();
-    UTIL.$('#btnChartMode').textContent = nxt === 'tv' ? 'Native' : 'TradingView';
-    ChartEngine.reload();
-  },
-
-  onPriceTick(symbol, mid, prevMid){
-    // Find slot
-    for(const slot of ['gold','euro','nasdaq']){
-      if(App.settings[slot + 'Symbol'] !== symbol) continue;
-      const el = UTIL.$('#price_' + slot);
-      if(!el) return;
-      if(mid == null) return;
-      el.textContent = UTIL.fmtPrice(mid, symbol.includes('JPY') ? 3 : symbol.startsWith('XAU') ? 2 : symbol.startsWith('US') || symbol.startsWith('NAS') ? 1 : 5);
-      if(prevMid != null && mid > prevMid){
-        el.classList.remove('flash-dn'); el.classList.add('flash-up');
-        setTimeout(() => el.classList.remove('flash-up'), 520);
-      } else if(prevMid != null && mid < prevMid){
-        el.classList.remove('flash-up'); el.classList.add('flash-dn');
-        setTimeout(() => el.classList.remove('flash-dn'), 520);
-      }
-      // chg%
-      const spark = App.spark[symbol] || [];
-      if(spark.length >= 2){
-        const first = spark[0];
-        const pct = ((mid - first) / first) * 100;
-        const cEl = UTIL.$('#chg_' + slot);
-        cEl.textContent = UTIL.fmtPct(pct);
-        cEl.className = 'card-chg ' + (pct >= 0 ? 'up' : 'dn');
-      }
-      this.drawSpark(slot, spark, mid >= (prevMid ?? mid));
-      return;
-    }
-  },
-
-  drawSpark(slot, arr, up){
-    const c = UTIL.$('#spark_' + slot);
-    if(!c) return;
-    const ctx = c.getContext('2d');
-    const W = c.width, H = c.height;
-    ctx.clearRect(0, 0, W, H);
-    if(arr.length < 2) return;
-    const mn = Math.min(...arr), mx = Math.max(...arr);
-    const rng = mx - mn || 1;
-    ctx.beginPath();
-    for(let i = 0; i < arr.length; i++){
-      const x = (i / (arr.length - 1)) * W;
-      const y = H - ((arr[i] - mn) / rng) * (H - 4) - 2;
-      if(i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-    }
-    ctx.strokeStyle = up ? '#00ffa3' : '#ff3b5c';
-    ctx.lineWidth = 1.5;
-    ctx.stroke();
-  },
-
-  renderAccount(){
-    const a = App.account || {};
-    const bal = num(a.balance);
-    const eq = num(a.equity);
-    const pl = (bal != null && eq != null) ? eq - bal : num(a.profit);
-    const fm = num(a.freeMargin ?? a.free_margin);
-    const lev = a.leverage ?? '—';
-    const type = (a.type || a.accountType || '').toString().toUpperCase();
-
-    UTIL.$('#accBalance').textContent = bal != null ? UTIL.fmtMoney(bal) : '—';
-    UTIL.$('#accEquity').textContent = eq != null ? UTIL.fmtMoney(eq) : '—';
-    const plEl = UTIL.$('#accPL');
-    plEl.textContent = pl != null ? UTIL.fmtMoney(pl) : '—';
-    plEl.className = 'val mono ' + (pl != null ? (pl > 0 ? 'up' : pl < 0 ? 'dn' : '') : '');
-    UTIL.$('#accFreeMargin').textContent = fm != null ? UTIL.fmtMoney(fm) : '—';
-    UTIL.$('#accOpenCount').textContent = String(App.positions.length);
-    UTIL.$('#accLeverage').textContent = lev || '—';
-
-    const badge = UTIL.$('#accTypeBadge');
-    if(type === 'DEMO'){
-      badge.textContent = 'DEMO';
-      badge.className = 'demo-badge';
-    } else if(type === 'LIVE' || type === 'REAL'){
-      badge.textContent = 'LIVE';
-      badge.className = 'live-badge';
-    } else {
-      badge.textContent = type || '—';
-      badge.className = 'demo-badge';
-    }
-    UTIL.$('#posCountChip').textContent = String(App.positions.length);
-  },
-
-  renderAutoTradeBtn(){
-    const b = UTIL.$('#btnAutoTrade');
-    if(AutoTrade.active){
-      b.classList.add('on');
-      b.innerHTML = '🤖 Auto-Trade: ON <span class="dot"></span>';
-    } else {
-      b.classList.remove('on');
-      b.textContent = '🤖 Auto-Trade: OFF';
-    }
-  },
-
-  renderPositions(){
-    const p = UTIL.$('#positionsPanel');
-    if(!App.positions.length){
-      p.innerHTML = '<div class="empty-state"><div class="big">📭</div><div>لا توجد مراكز مفتوحة</div></div>';
-      return;
-    }
-    let html = '<div class="tbl-wrap"><table><thead><tr>' +
-      '<th>Ticket</th><th>الرمز</th><th>الاتجاه</th><th>الحجم</th>' +
-      '<th>سعر الدخول</th><th>الحالي</th><th>SL</th><th>TP</th>' +
-      '<th>الربح</th><th>إجراء</th></tr></thead><tbody>';
-    for(const pos of App.positions){
-      const ticket = pos.ticket || pos.positionId || pos.id || '—';
-      const sym = pos.symbol || '—';
-      const side = (pos.side || pos.type || '').toString().toLowerCase();
-      const sideTxt = side.includes('buy') ? 'BUY' : side.includes('sell') ? 'SELL' : side || '—';
-      const vol = num(pos.volume ?? pos.lots);
-      const open = num(pos.openPrice ?? pos.open_price ?? pos.priceOpen);
-      const cur = num(pos.currentPrice ?? pos.current_price ?? pos.price);
-      const sl = num(pos.sl ?? pos.stopLoss);
-      const tp = num(pos.tp ?? pos.takeProfit);
-      const profit = num(pos.profit ?? pos.pnl);
-      const digits = sym.startsWith('XAU') ? 2 : sym.startsWith('US') || sym.startsWith('NAS') ? 1 : sym.includes('JPY') ? 3 : 5;
-      html += `<tr>
-        <td class="mono">${UTIL.esc(String(ticket))}</td>
-        <td>${UTIL.esc(sym)}</td>
-        <td class="${sideTxt === 'BUY' ? 'buy' : 'sell'}">${sideTxt}</td>
-        <td class="mono">${vol != null ? UTIL.fmt(vol, 2) : '—'}</td>
-        <td class="mono">${open != null ? UTIL.fmt(open, digits) : '—'}</td>
-        <td class="mono">${cur != null ? UTIL.fmt(cur, digits) : '—'}</td>
-        <td class="mono">${sl != null ? UTIL.fmt(sl, digits) : '—'}</td>
-        <td class="mono">${tp != null ? UTIL.fmt(tp, digits) : '—'}</td>
-        <td class="mono ${profit != null ? (profit > 0 ? 'buy' : profit < 0 ? 'sell' : '') : ''}">${profit != null ? UTIL.fmtMoney(profit) : '—'}</td>
-        <td><div class="pos-action">
-          <button class="btn sm danger" data-close="${UTIL.esc(String(ticket))}">إغلاق</button>
-        </div></td>
-      </tr>`;
-    }
-    html += '</tbody></table></div>';
-    p.innerHTML = html;
-    UTIL.$$('[data-close]', p).forEach(b => {
-      b.addEventListener('click', async () => {
-        const t = b.dataset.close;
-        if(!confirm('إغلاق المركز ' + t + '؟')) return;
-        const r = await API.closePosition(t);
-        if(r.ok){
-          UI.toast('✅ أُغلق المركز ' + t, 'success');
-          await App.refreshPositions();
-        } else {
-          UI.toast('❌ فشل: ' + (extractErr(r.data) || 'HTTP ' + r.status), 'error');
-        }
-      });
-    });
-  },
-
-  renderJournal(){
-    const p = UTIL.$('#journalPanel');
-    const trades = Journal.trades();
-    if(!trades.length){
-      p.innerHTML = '<div class="empty-state"><div class="big">📒</div><div>لا توجد صفقات مسجّلة</div></div>';
-      return;
-    }
-    const s = Journal.stats();
-    let html = `<div class="stats-grid" style="margin-bottom:12px">
-      <div class="stat-box"><div class="lbl">إجمالي</div><div class="val">${s.total}</div></div>
-      <div class="stat-box"><div class="lbl">رابحة</div><div class="val up">${s.wins}</div></div>
-      <div class="stat-box"><div class="lbl">خاسرة</div><div class="val dn">${s.losses}</div></div>
-      <div class="stat-box"><div class="lbl">Win Rate</div><div class="val ${s.winRate >= 50 ? 'up' : 'dn'}">${UTIL.fmt(s.winRate,1)}%</div></div>
-      <div class="stat-box"><div class="lbl">P&L</div><div class="val ${s.totalPnl >= 0 ? 'up' : 'dn'}">${UTIL.fmtMoney(s.totalPnl)}</div></div>
-      <div class="stat-box"><div class="lbl">Profit Factor</div><div class="val ${s.pf >= 1 ? 'up' : 'dn'}">${isFinite(s.pf) ? UTIL.fmt(s.pf,2) : '∞'}</div></div>
-    </div>`;
-
-    html += '<div class="tbl-wrap"><table><thead><tr>' +
-      '<th>#</th><th>التاريخ</th><th>الرمز</th><th>الاتجاه</th><th>الحجم</th>' +
-      '<th>الدخول</th><th>SL</th><th>TP2</th><th>الحالة</th><th>P&L</th><th>Tier</th><th>Score</th><th></th></tr></thead><tbody>';
-    trades.slice(0, 100).forEach((t, i) => {
-      const digits = t.symbol.startsWith('XAU') ? 2 : t.symbol.startsWith('US') || t.symbol.startsWith('NAS') ? 1 : 5;
-      html += `<tr>
-        <td>${i+1}</td>
-        <td class="mono" style="font-size:10px">${UTIL.dateTimeStr(t.openedAt)}</td>
-        <td>${UTIL.esc(t.symbol)}</td>
-        <td class="${t.direction === 'BUY' ? 'buy' : 'sell'}">${t.direction}</td>
-        <td class="mono">${UTIL.fmt(t.volume ?? 0, 2)}</td>
-        <td class="mono">${UTIL.fmt(t.entry, digits)}</td>
-        <td class="mono">${UTIL.fmt(t.sl, digits)}</td>
-        <td class="mono">${UTIL.fmt(t.tp2, digits)}</td>
-        <td>${UTIL.esc(t.status)}</td>
-        <td class="mono ${(t.pnl||0) >= 0 ? 'buy' : 'sell'}">${UTIL.fmtMoney(t.pnl || 0)}</td>
-        <td><span class="tier ${(t.tier || 'none').toLowerCase()}">${t.tier || '—'}</span></td>
-        <td class="mono">${t.score}</td>
-        <td><button class="btn sm danger" data-del="${t.id}">×</button></td>
-      </tr>`;
-    });
-    html += '</tbody></table></div>';
-    p.innerHTML = html;
-    UTIL.$$('[data-del]', p).forEach(b => {
-      b.addEventListener('click', () => {
-        if(confirm('حذف هذه الصفقة من السجل؟')) Journal.delete(b.dataset.del);
-      });
-    });
-  },
-
-  renderSignal(){
-    const p = UTIL.$('#signalPanel');
-    const sym = App.settings[App.activeSymbol + 'Symbol'];
-    const sig = App.signals[sym];
-    if(!sig){
-      p.innerHTML = '<div class="signal-empty"><div class="big">📡</div><div>بانتظار البيانات...</div></div>';
-      return;
-    }
-    const digits = sym.startsWith('XAU') ? 2 : sym.startsWith('US') || sym.startsWith('NAS') ? 1 : 5;
-    const tierCls = sig.tier === 'NO TRADE' ? 'none' : sig.tier.toLowerCase();
-    const dirCls = sig.direction === 'BUY' ? 'buy' : 'sell';
-    const dirLabel = sig.direction === 'BUY' ? 'شراء ▲' : 'بيع ▼';
-    const size = Sizing.calc(sig);
-
-    let html = `<div class="signal-card ${tierCls}">
-      <div class="sig-head">
-        <div>
-          <div class="sig-dir ${dirCls}">${dirLabel} · ${UTIL.esc(sym)}</div>
-          <div style="font-size:10px;color:var(--muted);margin-top:2px">${App.activeTimeframe}</div>
-        </div>
-        <div style="text-align:left">
-          <div class="score-big" style="color:${sig.tier === 'ELITE' ? '#a855f7' : sig.tier === 'STRONG' ? '#00ffa3' : sig.tier === 'MEDIUM' ? '#ffb020' : '#6b7280'}">${sig.score}</div>
-          <div class="tier ${tierCls}" style="margin-top:2px">${sig.tier}</div>
-        </div>
-      </div>
-      <div class="levels">
-        <div class="lvl entry"><div class="lbl">Entry</div><div class="val">${UTIL.fmt(sig.entry, digits)}</div></div>
-        <div class="lvl sl"><div class="lbl">Stop Loss</div><div class="val">${UTIL.fmt(sig.sl, digits)}</div></div>
-        <div class="lvl tp"><div class="lbl">TP1</div><div class="val">${UTIL.fmt(sig.tp1, digits)}</div></div>
-        <div class="lvl tp"><div class="lbl">TP2</div><div class="val">${UTIL.fmt(sig.tp2, digits)}</div></div>
-        <div class="lvl tp"><div class="lbl">TP3</div><div class="val">${UTIL.fmt(sig.tp3, digits)}</div></div>
-        <div class="lvl"><div class="lbl">ATR</div><div class="val">${UTIL.fmt(sig.atr, digits)}</div></div>
-      </div>
-      <div class="risk-box">
-        <div style="font-weight:600;font-size:11px;margin-bottom:6px">💰 حجم المركز المقترح</div>
-        <div class="meta-row"><span class="k">Lots</span><span class="v">${UTIL.fmt(size.lots, 2)}</span></div>
-        <div class="meta-row"><span class="k">المخاطرة</span><span class="v" style="color:var(--red)">${size.riskAmount != null ? UTIL.fmtMoney(size.riskAmount) : '—'}</span></div>
-        <div class="meta-row"><span class="k">SL (نقاط)</span><span class="v">${size.slPoints != null ? UTIL.fmt(size.slPoints, 1) : '—'}</span></div>
-      </div>
-      <div style="margin-top:10px">
-        <div style="font-size:10px;color:var(--muted);text-transform:uppercase;font-weight:600;margin-bottom:4px">أسباب (${sig.reasons.length})</div>
-        <ul class="reasons-list">${sig.reasons.slice(0, 10).map(r => `<li>${UTIL.esc(r)}</li>`).join('')}</ul>
-      </div>
-    </div>`;
-    p.innerHTML = html;
-  },
-
-  renderCards(){
-    for(const slot of ['gold','euro','nasdaq']){
-      const sym = App.settings[slot + 'Symbol'];
-      const sig = App.signals[sym];
-      const tEl = UTIL.$('#tier_' + slot);
-      const gEl = UTIL.$('#gauge_' + slot);
-      const cardEl = UTIL.$('#card_' + slot);
-      if(!tEl || !gEl || !cardEl) continue;
-      if(sig && sig.tier !== 'NO TRADE'){
-        const cls = sig.tier.toLowerCase();
-        tEl.className = 'tier ' + cls;
-        tEl.textContent = sig.tier;
-        gEl.style.width = sig.score + '%';
-        gEl.style.background = sig.tier === 'ELITE' ? '#a855f7' : sig.tier === 'STRONG' ? '#00ffa3' : '#ffb020';
-        if(sig.tier === 'ELITE' || sig.tier === 'STRONG'){
-          cardEl.classList.remove('pulse-green','pulse-purple');
-          void cardEl.offsetWidth;
-          cardEl.classList.add(sig.tier === 'ELITE' ? 'pulse-purple' : 'pulse-green');
-          setTimeout(() => cardEl.classList.remove('pulse-green','pulse-purple'), 5400);
-        }
-      } else {
-        tEl.className = 'tier none';
-        tEl.textContent = 'انتظار';
-        gEl.style.width = '0%';
-      }
-    }
-  },
-
-  toast(msg, type='info'){
-    const c = UTIL.$('#toastsRoot');
-    const t = UTIL.el('div', { class: 'toast ' + type }, msg);
-    c.appendChild(t);
-    setTimeout(() => {
-      t.style.opacity = '0';
-      t.style.transform = 'translateX(-20px)';
-      t.style.transition = 'all .3s';
-      setTimeout(() => t.remove(), 320);
-    }, 4400);
-  },
-
-  /* ---------- Modals ---------- */
-  openSettingsModal(){
-    const bg = UTIL.el('div', { class: 'modal-bg' });
-    const m = UTIL.el('div', { class: 'modal' });
-    bg.appendChild(m);
-    document.body.appendChild(bg);
-    bg.addEventListener('click', (e) => { if(e.target === bg && App.booted) bg.remove(); });
-    this._renderSettingsModal(m, !App.booted);
-  },
-
-  _renderSettingsModal(m, firstRun){
-    const s = App.settings;
-    m.innerHTML = `
-    <div class="modal-head">
-      <h3>${firstRun ? '⚙️ إعداد أولي — TickerAll API' : '⚙️ إعدادات API'}</h3>
-      ${firstRun ? '' : '<button class="close-x" data-close>×</button>'}
-    </div>
-    <div class="modal-body">
-      ${firstRun ? '<div class="warn-box">أدخل بيانات TickerAll للبدء. الحساب الافتراضي تجريبي (DEMO).</div>' : ''}
-      <div class="error-box" id="setErr"></div>
-      <div class="form-row">
-        <label>API Key *</label>
-        <input type="password" id="fApiKey" class="mono" value="${UTIL.esc(s.apiKey)}" placeholder="tk_..." autocomplete="off">
-      </div>
-      <div class="form-row">
-        <label>Account ID</label>
-        <input type="text" id="fAccountId" class="mono" value="${UTIL.esc(s.accountId)}">
-      </div>
-      <div class="form-row">
-        <label>Server</label>
-        <input type="text" id="fServer" class="mono" value="${UTIL.esc(s.server)}">
-      </div>
-      <div class="form-row">
-        <label>رمز الذهب (Gold)</label>
-        <input type="text" id="fGold" class="mono" value="${UTIL.esc(s.goldSymbol)}">
-      </div>
-      <div class="form-row">
-        <label>رمز اليورو (Euro)</label>
-        <input type="text" id="fEuro" class="mono" value="${UTIL.esc(s.euroSymbol)}">
-      </div>
-      <div class="form-row">
-        <label>رمز ناسداك (Nasdaq)</label>
-        <input type="text" id="fNasdaq" class="mono" value="${UTIL.esc(s.nasdaqSymbol)}">
-        <div class="hint">fallback: US100m → NAS100m → USTECm → NDXm (يُكتشف تلقائياً)</div>
-      </div>
-      <div class="form-row">
-        <label>REST URL</label>
-        <input type="text" id="fRest" class="mono" value="${UTIL.esc(s.restUrl)}">
-      </div>
-      <div class="form-row">
-        <label>WebSocket URL</label>
-        <input type="text" id="fWs" class="mono" value="${UTIL.esc(s.wsUrl)}">
-      </div>
-      <div class="form-row" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
-        <div><label>مخاطرة %</label><input type="number" id="fRisk" value="${s.riskPct}" min="0.1" max="5" step="0.1"></div>
-        <div><label>Max Lot</label><input type="number" id="fMaxLot" value="${s.maxLot}" min="0.01" max="100" step="0.01"></div>
-        <div><label>Min Score</label><input type="number" id="fMinScore" value="${s.minScore}" min="50" max="100"></div>
-      </div>
-    </div>
-    <div class="modal-foot">
-      ${firstRun ? '' : '<button class="btn" data-close>إلغاء</button>'}
-      <button class="btn" id="btnClearPaths">🔄 إعادة اكتشاف Endpoints</button>
-      <button class="btn primary" id="btnValidateSave">${firstRun ? '✅ حفظ والبدء' : '💾 حفظ'}</button>
-    </div>`;
-
-    UTIL.$$('[data-close]', m).forEach(b => b.addEventListener('click', () => m.parentElement.remove()));
-    UTIL.$('#btnClearPaths', m).addEventListener('click', () => {
-      PathCache.clear();
-      UI.toast('🔄 سيُعاد اكتشاف المسارات في الطلب التالي', 'info');
-    });
-
-    UTIL.$('#btnValidateSave', m).addEventListener('click', async () => {
-      const err = UTIL.$('#setErr', m);
-      err.classList.remove('on');
-      const newS = {
-        apiKey: UTIL.$('#fApiKey', m).value.trim(),
-        accountId: UTIL.$('#fAccountId', m).value.trim(),
-        server: UTIL.$('#fServer', m).value.trim(),
-        goldSymbol: UTIL.$('#fGold', m).value.trim(),
-        euroSymbol: UTIL.$('#fEuro', m).value.trim(),
-        nasdaqSymbol: UTIL.$('#fNasdaq', m).value.trim(),
-        restUrl: UTIL.$('#fRest', m).value.trim().replace(/\/+$/,''),
-        wsUrl: UTIL.$('#fWs', m).value.trim(),
-        riskPct: parseFloat(UTIL.$('#fRisk', m).value) || 1,
-        maxLot: parseFloat(UTIL.$('#fMaxLot', m).value) || 1,
-        minScore: parseFloat(UTIL.$('#fMinScore', m).value) || 55
-      };
-      if(!newS.apiKey){ err.textContent = '❌ API Key مطلوب'; err.classList.add('on'); return; }
-      if(!newS.accountId){ err.textContent = '❌ Account ID مطلوب'; err.classList.add('on'); return; }
-
-      // Save provisionally so API calls use new values
-      const prev = { ...App.settings };
-      Object.assign(App.settings, newS);
-
-      err.textContent = '⏳ جارٍ التحقق...';
-      err.classList.add('on');
-      err.style.background = 'rgba(56,189,248,.1)';
-      err.style.borderColor = 'rgba(56,189,248,.4)';
-      err.style.color = '#38bdf8';
-
-      try{
-        const r = await API.getAccount();
-        if(!r.ok){
-          err.textContent = '❌ فشل التحقق: ' + (extractErr(r.data) || 'HTTP ' + r.status);
-          err.style.background = 'rgba(255,59,92,.1)';
-          err.style.borderColor = 'rgba(255,59,92,.4)';
-          err.style.color = '#ff3b5c';
-          Object.assign(App.settings, prev); // rollback
-          return;
-        }
-        // Success
-        App.saveSettings();
-        const accData = r.data?.data || r.data?.account || r.data || {};
-        App.account = accData;
-        UI.updateSymbolsChip();
-        UI.renderAccount();
-        err.textContent = '✅ تم التحقق بنجاح';
-        err.style.background = 'rgba(0,255,163,.1)';
-        err.style.borderColor = 'rgba(0,255,163,.4)';
-        err.style.color = '#00ffa3';
-        setTimeout(() => {
-          m.parentElement.remove();
-          if(!App.booted) App.boot();
-        }, 500);
-      } catch(e){
-        err.textContent = '❌ ' + e.message;
-        err.style.background = 'rgba(255,59,92,.1)';
-        err.style.borderColor = 'rgba(255,59,92,.4)';
-        err.style.color = '#ff3b5c';
-        Object.assign(App.settings, prev);
-      }
-    });
-  },
-
-  confirmAutoTrade(){
-    if(AutoTrade.active){
-      // Turning OFF
-      AutoTrade.toggle(false);
-      UI.toast('🤖 Auto-Trade: OFF', 'info');
-      return;
-    }
-    const bg = UTIL.el('div', { class: 'modal-bg' });
-    const m = UTIL.el('div', { class: 'modal' });
-    bg.appendChild(m);
-    document.body.appendChild(bg);
-    bg.addEventListener('click', (e) => { if(e.target === bg) bg.remove(); });
-    m.innerHTML = `
-      <div class="modal-head"><h3>🤖 تفعيل التداول الآلي</h3><button class="close-x" data-close>×</button></div>
-      <div class="modal-body">
-        <div class="warn-box">
-          ⚠️ سيتم تنفيذ الصفقات <b>تلقائياً</b> على حسابك التجريبي (DEMO) عندما يصل تقييم الإشارة إلى
-          <b>${App.settings.minScore}</b> أو أعلى.<br><br>
-          تأكد أنك تفهم المخاطر. الحد الأقصى للحجم: <b>${App.settings.maxLot}</b> لوت.<br>
-          المخاطرة لكل صفقة: <b>${App.settings.riskPct}%</b> من الرصيد.
-        </div>
-      </div>
-      <div class="modal-foot">
-        <button class="btn" data-close>إلغاء</button>
-        <button class="btn primary" id="btnConfirmAuto">نعم، فعّل</button>
-      </div>`;
-    UTIL.$$('[data-close]', m).forEach(b => b.addEventListener('click', () => m.parentElement.remove()));
-    UTIL.$('#btnConfirmAuto', m).addEventListener('click', () => {
-      AutoTrade.toggle(true);
-      UI.toast('🤖 Auto-Trade: ON — سيبدأ التداول عند الإشارات القوية', 'success');
-      m.parentElement.remove();
-    });
-  },
-
-  confirmKillSwitch(){
-    const bg = UTIL.el('div', { class: 'modal-bg' });
-    const m = UTIL.el('div', { class: 'modal' });
-    bg.appendChild(m);
-    document.body.appendChild(bg);
-    bg.addEventListener('click', (e) => { if(e.target === bg) bg.remove(); });
-    m.innerHTML = `
-      <div class="modal-head"><h3>🛑 Kill Switch</h3><button class="close-x" data-close>×</button></div>
-      <div class="modal-body">
-        <div class="error-box on" style="background:rgba(255,59,92,.1);border-color:rgba(255,59,92,.4);color:#ff3b5c">
-          سيتم <b>إغلاق كل المراكز المفتوحة</b> فوراً وإيقاف التداول الآلي.
-          لا يمكن التراجع. متابعة؟
-        </div>
-        <div>عدد المراكز الحالية: <b>${App.positions.length}</b></div>
-      </div>
-      <div class="modal-foot">
-        <button class="btn" data-close>إلغاء</button>
-        <button class="btn danger" id="btnConfirmKill">🛑 نعم، أغلق الكل</button>
-      </div>`;
-    UTIL.$$('[data-close]', m).forEach(b => b.addEventListener('click', () => m.parentElement.remove()));
-    UTIL.$('#btnConfirmKill', m).addEventListener('click', async () => {
-      m.parentElement.remove();
-      await AutoTrade.killSwitch();
-    });
-  },
-
-  exportCSV(){
-    const trades = Journal.trades();
-    if(!trades.length){ this.toast('لا توجد صفقات', 'warn'); return; }
-    const headers = ['id','ticket','openedAt','closedAt','symbol','direction','volume','entry','sl','tp1','tp2','tp3','score','tier','status','exitPrice','exitReason','pnl'];
-    const rows = [headers.join(',')];
-    for(const t of trades){
-      rows.push(headers.map(h => {
-        let v = t[h];
-        if(v == null) return '';
-        return '"' + String(v).replace(/"/g,'""') + '"';
-      }).join(','));
-    }
-    const blob = new Blob(['\uFEFF' + rows.join('\n')], { type: 'text/csv;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url; a.download = 'trades_' + UTIL.dateStr(Date.now()) + '.csv';
-    a.click(); URL.revokeObjectURL(url);
-  },
-
-  exportJSON(){
-    const blob = new Blob([JSON.stringify({ exportedAt: new Date().toISOString(), trades: Journal.trades() }, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url; a.download = 'trades_' + UTIL.dateStr(Date.now()) + '.json';
-    a.click(); URL.revokeObjectURL(url);
-  }
+App.onActiveSymbols = function(symbols){
+  App.activeSymbols = symbols.map(s => s.symbol);
+  Logger.data('Active symbols:', App.activeSymbols.length);
+  // Auto-detect Nasdaq symbol if needed
+  App.detectNasdaqSymbol();
 };
 
-/* ===================== 18. Chart Engine ===================== */
+App.refreshPortfolio = async function(){
+  if(!App.wsReady || !App.wsAuth) return;
+  try{
+    const r = await DerivAPI.getPortfolio();
+    if(r.portfolio) App.onPortfolio(r.portfolio);
+  } catch(e){ Logger.warn('Portfolio failed:', e.message); }
+};
+
+App.detectNasdaqSymbol = function(){
+  const candidates = CONFIG.NASDAQ_CANDIDATES;
+  const available = App.activeSymbols || [];
+  for(const c of candidates){
+    if(available.includes(c)){
+      if(App.settings.nasdaqSymbol !== c){
+        App.settings.nasdaqSymbol = c;
+        App.saveSettings();
+        UI.toast('✅ رمز ناسداك: ' + c, 'success');
+        Logger.data('Nasdaq resolved:', c);
+        // Resubscribe
+        DerivAPI.subscribeTicks(c);
+        DerivAPI.subscribeCandles(c, CONFIG.TF[App.activeTimeframe].granularity);
+      }
+      return c;
+    }
+  }
+  Logger.warn('Nasdaq symbol not found in active_symbols');
+  return null;
+};
+
+App.fetchActiveSymbols = async function(){
+  try{
+    const r = await DerivAPI.fetchActiveSymbols();
+    if(r.active_symbols) App.onActiveSymbols(r.active_symbols);
+  } catch(e){ Logger.warn('active_symbols failed:', e.message); }
+};
+
+function num(v){
+  if(v == null) return null;
+  const n = Number(v);
+  return isFinite(n) ? n : null;
+}
+
+/* ===================== 14. ChartEngine ===================== */
 const ChartEngine = {
   tvWidget: null,
   nativeChart: null,
   candleSeries: null,
   _tvLoaded: false,
+  mode: 'tv',
 
   async initTV(){
     const container = UTIL.$('#tvchart');
@@ -2106,14 +1368,13 @@ const ChartEngine = {
     container.innerHTML = '';
     try{
       await this.loadTV();
-      const sym = App.settings[App.activeSymbol + 'Symbol'];
-      const tvSymbol = this.mapTVSymbol(sym);
-      const interval = this.mapTVInterval(App.activeTimeframe);
+      const sym = App.settings[App.activeSlot + 'Symbol'];
+      const tvSymbol = CONFIG.TV_SYMBOL[sym] || sym;
       this.tvWidget = new window.TradingView.widget({
         container_id: 'tvchart',
         autosize: true,
         symbol: tvSymbol,
-        interval,
+        interval: this.mapInterval(App.activeTimeframe),
         timezone: 'Etc/UTC',
         theme: 'dark',
         style: '1',
@@ -2145,14 +1406,7 @@ const ChartEngine = {
     });
   },
 
-  mapTVSymbol(sym){
-    if(sym.startsWith('XAU')) return 'OANDA:XAUUSD';
-    if(sym.startsWith('EUR')) return 'FX:EURUSD';
-    if(sym.startsWith('US') || sym.startsWith('NAS') || sym.startsWith('NDX')) return 'NASDAQ:NDX';
-    return sym;
-  },
-
-  mapTVInterval(tf){
+  mapInterval(tf){
     return { M5: '5', M15: '15', H1: '60', H4: '240', D1: 'D' }[tf] || '15';
   },
 
@@ -2179,18 +1433,17 @@ const ChartEngine = {
     }).observe(container);
   },
 
-  updateNative(){
-    const sym = App.settings[App.activeSymbol + 'Symbol'];
-    const bars = App.candles[sym];
+  updateNative(bars){
     if(!this.candleSeries || !bars || !bars.length) return;
     try{
-      this.candleSeries.setData(bars.map(b => ({ time: b.time, open: b.open, high: b.high, low: b.low, close: b.close })));
+      this.candleSeries.setData(bars.map(b => ({
+        time: b.time, open: b.open, high: b.high, low: b.low, close: b.close
+      })));
     } catch(e){ Logger.warn('native update failed', e.message); }
   },
 
   async reload(){
-    const mode = App.settings.chartMode || 'tv';
-    if(mode === 'tv'){
+    if(this.mode === 'tv'){
       UTIL.$('#tvchart').classList.remove('hidden');
       UTIL.$('#nativeChart').classList.add('hidden');
       UTIL.$('#btnChartMode').textContent = 'Native';
@@ -2201,44 +1454,608 @@ const ChartEngine = {
       UTIL.$('#nativeChart').classList.remove('hidden');
       UTIL.$('#btnChartMode').textContent = 'TradingView';
       this.initNative();
-      this.updateNative();
+      const sym = App.settings[App.activeSlot + 'Symbol'];
+      this.updateNative(App.candles[sym]);
     }
   }
 };
 
-/* ===================== 19. Nasdaq Symbol Auto-Detect ===================== */
-async function autoDetectNasdaqSymbol(){
-  const candidates = [App.settings.nasdaqSymbol, 'US100m', 'NAS100m', 'USTECm', 'NDXm'];
-  const uniq = [...new Set(candidates.filter(Boolean))];
-  for(const c of uniq){
-    try{
-      const r = await API.getCandles(c, App.activeTimeframe, 50);
-      if(r.ok){
-        const raw = Array.isArray(r.data) ? r.data : (r.data.candles || r.data.data || r.data.values || []);
-        const bars = raw.map(normalizeBar).filter(Boolean);
-        if(bars.length){
-          if(App.settings.nasdaqSymbol !== c){
-            App.settings.nasdaqSymbol = c;
-            App.saveSettings();
-            UI.updateSymbolsChip();
-            UI.toast('✅ رمز ناسداك: ' + c, 'success');
-            Logger.data('Nasdaq symbol resolved as', c);
-          } else {
-            Logger.data('Nasdaq symbol OK:', c);
-          }
-          return c;
-        }
-      }
-    } catch(e){
-      Logger.warn('Nasdaq candidate failed:', c, e.message);
-    }
-    await UTIL.sleep(200);
-  }
-  UI.toast('⚠️ لم يُعثر على رمز ناسداك صالح', 'warn');
-  return null;
-}
+/* ===================== 15. UI ===================== */
+const UI = {
+  init(){
+    this.buildCards();
+    this.buildTFGroup();
+    this.bindEvents();
+    this.renderAccount();
+    this.renderPositions();
+    this.renderJournal();
+    this.renderAutoTradeBtn();
+    this.$('#loginVal').textContent = App.account?.loginid || '—';
+  },
 
-/* ===================== 20. Boot ===================== */
+  $(s, r=document){ return UTIL.$(s, r); },
+  $$(s, r=document){ return UTIL.$$(s, r); },
+
+  setStatus(state){
+    const d = this.$('#statusDot');
+    d.classList.remove('live','connecting','off');
+    d.classList.add(state);
+    d.title = state === 'live' ? 'WebSocket متصل' :
+              state === 'connecting' ? 'جارٍ الاتصال' : 'غير متصل';
+  },
+
+  buildCards(){
+    const g = this.$('#cardsGrid');
+    g.innerHTML = '';
+    const slots = [
+      { key: 'gold', label: 'الذهب' },
+      { key: 'euro', label: 'يورو' },
+      { key: 'nasdaq', label: 'ناسداك' }
+    ];
+    for(const slot of slots){
+      const sym = App.settings[slot.key + 'Symbol'];
+      const card = UTIL.el('div', { class: 'card', 'data-slot': slot.key, id: 'card_' + slot.key },
+        UTIL.el('div', { class: 'card-head' },
+          UTIL.el('div', {},
+            UTIL.el('div', { class: 'card-sym' }, sym),
+            UTIL.el('div', { class: 'card-name' }, slot.label)
+          ),
+          UTIL.el('canvas', { class: 'spark', id: 'spark_' + slot.key, width: 70, height: 26 })
+        ),
+        UTIL.el('div', { class: 'card-price mono', id: 'price_' + slot.key }, '—'),
+        UTIL.el('div', { class: 'card-chg', id: 'chg_' + slot.key }, '—'),
+        UTIL.el('div', { class: 'card-foot' },
+          UTIL.el('span', { class: 'tier none', id: 'tier_' + slot.key }, 'انتظار'),
+          UTIL.el('div', { class: 'gauge' }, UTIL.el('div', { id: 'gauge_' + slot.key }))
+        )
+      );
+      card.addEventListener('click', () => this.selectSlot(slot.key));
+      g.appendChild(card);
+    }
+  },
+
+  buildTFGroup(){
+    const g = this.$('#tfGroup');
+    g.innerHTML = '';
+    for(const k of Object.keys(CONFIG.TF)){
+      const b = UTIL.el('button', { class: 'tf-btn' + (k === App.activeTimeframe ? ' active' : '') }, CONFIG.TF[k].label);
+      b.addEventListener('click', () => this.selectTF(k));
+      g.appendChild(b);
+    }
+  },
+
+  bindEvents(){
+    this.$('#btnSettings').addEventListener('click', () => this.openSettingsModal());
+    this.$('#btnOpenSettings1').addEventListener('click', () => this.openSettingsModal());
+    this.$('#btnAutoTrade').addEventListener('click', () => this.confirmAutoTrade());
+    this.$('#btnKillSwitch').addEventListener('click', () => this.confirmKillSwitch());
+    this.$('#btnRefreshPos').addEventListener('click', () => App.refreshPortfolio());
+    this.$('#btnCSV').addEventListener('click', () => this.exportCSV());
+    this.$('#btnJSON').addEventListener('click', () => this.exportJSON());
+    this.$('#btnClearJournal').addEventListener('click', () => {
+      if(confirm('مسح كل سجل التداول؟')) Journal.clear();
+    });
+    this.$('#btnChartMode').addEventListener('click', () => {
+      ChartEngine.mode = ChartEngine.mode === 'tv' ? 'native' : 'tv';
+      ChartEngine.reload();
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if(['INPUT','TEXTAREA','SELECT'].includes(e.target.tagName)) return;
+      if(e.key === 'Escape') this.$$('.modal-bg').forEach(m => m.remove());
+    });
+
+    setInterval(() => { this.$('#utcClock').textContent = UTIL.timeUTC(); }, 1000);
+  },
+
+  selectSlot(slot){
+    App.activeSlot = slot;
+    this.$$('.card').forEach(c => c.classList.toggle('active', c.dataset.slot === slot));
+    const sym = App.settings[slot + 'Symbol'];
+    this.$('#sigSymChip').textContent = sym;
+    this.renderSignal();
+    ChartEngine.reload();
+  },
+
+  selectTF(tf){
+    App.activeTimeframe = tf;
+    App.settings.timeframe = tf;
+    App.saveSettings();
+    this.$$('#tfGroup .tf-btn').forEach(b => b.classList.toggle('active', b.textContent === CONFIG.TF[tf].label));
+    const gran = CONFIG.TF[tf].granularity;
+    for(const slot of ['gold','euro','nasdaq']){
+      const sym = App.settings[slot + 'Symbol'];
+      DerivAPI.subscribeCandles(sym, gran);
+    }
+    ChartEngine.reload();
+  },
+
+  onPriceTick(symbol, mid, prevMid){
+    for(const slot of ['gold','euro','nasdaq']){
+      if(App.settings[slot + 'Symbol'] !== symbol) continue;
+      const el = this.$('#price_' + slot);
+      if(!el || mid == null) return;
+      const digits = CONFIG.DIGITS[symbol] ?? 2;
+      el.textContent = UTIL.fmtPrice(mid, digits);
+      if(prevMid != null && mid > prevMid){
+        el.classList.remove('flash-dn'); el.classList.add('flash-up');
+        setTimeout(() => el.classList.remove('flash-up'), 520);
+      } else if(prevMid != null && mid < prevMid){
+        el.classList.remove('flash-up'); el.classList.add('flash-dn');
+        setTimeout(() => el.classList.remove('flash-dn'), 520);
+      }
+      const spark = App.spark[symbol] || [];
+      if(spark.length >= 2){
+        const first = spark[0];
+        const pct = ((mid - first) / first) * 100;
+        const cEl = this.$('#chg_' + slot);
+        cEl.textContent = UTIL.fmtPct(pct);
+        cEl.className = 'card-chg ' + (pct >= 0 ? 'up' : 'dn');
+      }
+      this.drawSpark(slot, spark, mid >= (prevMid ?? mid));
+      return;
+    }
+  },
+
+  drawSpark(slot, arr, up){
+    const c = this.$('#spark_' + slot);
+    if(!c) return;
+    const ctx = c.getContext('2d');
+    const W = c.width, H = c.height;
+    ctx.clearRect(0, 0, W, H);
+    if(arr.length < 2) return;
+    const mn = Math.min(...arr), mx = Math.max(...arr);
+    const rng = mx - mn || 1;
+    ctx.beginPath();
+    for(let i = 0; i < arr.length; i++){
+      const x = (i / (arr.length-1)) * W;
+      const y = H - ((arr[i]-mn)/rng) * (H-4) - 2;
+      if(i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    }
+    ctx.strokeStyle = up ? '#00ffa3' : '#ff3b5c';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+  },
+
+  renderAccount(){
+    const a = App.account || {};
+    const bal = num(a.balance);
+    const cur = a.currency || 'USD';
+    const curSym = cur === 'USD' ? '$' : cur + ' ';
+    this.$('#accBalance').textContent = bal != null ? curSym + bal.toFixed(2) : '—';
+    this.$('#accCurrency').textContent = cur;
+    this.$('#accOpen').textContent = String(App.positions.length);
+
+    // Total P/L
+    let pl = 0;
+    for(const p of App.positions) pl += parseFloat(p.profit) || 0;
+    const plEl = this.$('#accPL');
+    plEl.textContent = App.positions.length ? curSym + pl.toFixed(2) : '—';
+    plEl.className = 'val mono ' + (pl > 0 ? 'up' : pl < 0 ? 'dn' : '');
+
+    const badge = this.$('#accTypeBadge');
+    if(a.is_virtual === 1 || a.is_virtual === true){
+      badge.textContent = 'DEMO';
+      badge.className = 'demo-badge';
+    } else if(a.is_virtual === 0 || a.is_virtual === false){
+      badge.textContent = 'REAL';
+      badge.className = 'real-badge';
+    } else {
+      badge.textContent = App.settings.accountType || '—';
+      badge.className = 'demo-badge';
+    }
+    this.$('#posCountChip').textContent = String(App.positions.length);
+  },
+
+  renderAutoTradeBtn(){
+    const b = this.$('#btnAutoTrade');
+    if(App.autoTrade.active){
+      b.classList.add('on');
+      b.innerHTML = '🤖 Auto-Trade: ON <span class="dot"></span>';
+    } else {
+      b.classList.remove('on');
+      b.textContent = '🤖 Auto-Trade: OFF';
+    }
+  },
+
+  renderPositions(){
+    const p = this.$('#positionsPanel');
+    if(!App.positions.length){
+      p.innerHTML = '<div class="empty-state"><div class="big">📭</div><div>لا توجد مراكز مفتوحة</div></div>';
+      return;
+    }
+    let html = '<div class="tbl-wrap"><table><thead><tr>' +
+      '<th>Contract ID</th><th>الرمز</th><th>النوع</th><th>Stake</th>' +
+      '<th>Entry</th><th>Now</th><th>P/L</th><th>إجراء</th></tr></thead><tbody>';
+    for(const c of App.positions){
+      const cid = c.contract_id;
+      const sym = c.underlying || c.symbol || '—';
+      const type = (c.contract_type || '').toUpperCase();
+      const isBuy = type.includes('MULTUP') || type.includes('CALL') || type.includes('HIGHER');
+      const stake = parseFloat(c.buy_price) || 0;
+      const entry = parseFloat(c.entry_spot) || 0;
+      const cur = parseFloat(c.current_spot) || entry;
+      const profit = parseFloat(c.profit) || 0;
+      const digits = CONFIG.DIGITS[sym] ?? 2;
+      html += `<tr>
+        <td class="mono">${UTIL.esc(String(cid))}</td>
+        <td>${UTIL.esc(sym)}</td>
+        <td class="${isBuy ? 'buy' : 'sell'}">${type} ${isBuy ? '▲' : '▼'}</td>
+        <td class="mono">${stake.toFixed(2)}</td>
+        <td class="mono">${entry.toFixed(digits)}</td>
+        <td class="mono">${cur.toFixed(digits)}</td>
+        <td class="mono ${profit >= 0 ? 'buy' : 'sell'}">${profit >= 0 ? '+' : ''}${profit.toFixed(2)}</td>
+        <td><div class="pos-action"><button class="btn sm danger" data-close="${UTIL.esc(String(cid))}">إغلاق</button></div></td>
+      </tr>`;
+    }
+    html += '</tbody></table></div>';
+    p.innerHTML = html;
+    this.$$('[data-close]', p).forEach(b => {
+      b.addEventListener('click', async () => {
+        const cid = b.dataset.close;
+        if(!confirm('إغلاق العقد ' + cid + '؟')) return;
+        try{
+          await DerivAPI.sellContract(cid);
+          UI.toast('✅ أُغلق العقد ' + cid, 'success');
+          setTimeout(() => App.refreshPortfolio(), 800);
+        } catch(e){
+          UI.toast('❌ فشل الإغلاق: ' + translateError(e), 'error');
+        }
+      });
+    });
+  },
+
+  renderJournal(){
+    const p = this.$('#journalPanel');
+    const trades = Journal.trades();
+    if(!trades.length){
+      p.innerHTML = '<div class="empty-state"><div class="big">📒</div><div>لا توجد صفقات مسجّلة</div></div>';
+      return;
+    }
+    const s = Journal.stats();
+    let html = `<div class="stats-grid" style="margin-bottom:12px">
+      <div class="stat-box"><div class="lbl">إجمالي</div><div class="val">${s.total}</div></div>
+      <div class="stat-box"><div class="lbl">رابحة</div><div class="val up">${s.wins}</div></div>
+      <div class="stat-box"><div class="lbl">خاسرة</div><div class="val dn">${s.losses}</div></div>
+      <div class="stat-box"><div class="lbl">Win Rate</div><div class="val ${s.winRate >= 50 ? 'up' : 'dn'}">${UTIL.fmt(s.winRate,1)}%</div></div>
+      <div class="stat-box"><div class="lbl">P&L</div><div class="val ${s.totalPnl >= 0 ? 'up' : 'dn'}">${UTIL.fmtMoney(s.totalPnl)}</div></div>
+      <div class="stat-box"><div class="lbl">Profit Factor</div><div class="val ${s.pf >= 1 ? 'up' : 'dn'}">${isFinite(s.pf) ? UTIL.fmt(s.pf,2) : '∞'}</div></div>
+    </div>`;
+    html += '<div class="tbl-wrap"><table><thead><tr>' +
+      '<th>#</th><th>التاريخ</th><th>الرمز</th><th>النوع</th><th>Stake</th>' +
+      '<th>Entry</th><th>الحالة</th><th>P&L</th><th>Tier</th><th>Score</th><th></th></tr></thead><tbody>';
+    trades.slice(0, 100).forEach((t, i) => {
+      const digits = CONFIG.DIGITS[t.symbol] ?? 2;
+      html += `<tr>
+        <td>${i+1}</td>
+        <td class="mono" style="font-size:10px">${UTIL.dateTimeStr(t.openedAt)}</td>
+        <td>${UTIL.esc(t.symbol)}</td>
+        <td class="${t.direction === 'BUY' ? 'buy' : 'sell'}">${t.direction}</td>
+        <td class="mono">${UTIL.fmt(t.stake ?? 0, 2)}</td>
+        <td class="mono">${UTIL.fmt(t.entry, digits)}</td>
+        <td>${UTIL.esc(t.status)}</td>
+        <td class="mono ${(t.pnl||0) >= 0 ? 'buy' : 'sell'}">${UTIL.fmtMoney(t.pnl || 0)}</td>
+        <td><span class="tier ${(t.tier || 'none').toLowerCase()}">${t.tier || '—'}</span></td>
+        <td class="mono">${t.score}</td>
+        <td><button class="btn sm danger" data-del="${t.id}">×</button></td>
+      </tr>`;
+    });
+    html += '</tbody></table></div>';
+    p.innerHTML = html;
+    this.$$('[data-del]', p).forEach(b => {
+      b.addEventListener('click', () => {
+        if(confirm('حذف هذه الصفقة من السجل؟')) Journal.delete(b.dataset.del);
+      });
+    });
+  },
+
+  renderSignal(){
+    const p = this.$('#signalPanel');
+    const sym = App.settings[App.activeSlot + 'Symbol'];
+    const sig = App.signals[sym];
+    if(!sig){
+      p.innerHTML = '<div class="signal-empty"><div class="big">📡</div><div>بانتظار البيانات...</div></div>';
+      return;
+    }
+    const digits = CONFIG.DIGITS[sym] ?? 2;
+    const tierCls = sig.tier === 'NO TRADE' ? 'none' : sig.tier.toLowerCase();
+    const dirCls = sig.direction === 'BUY' ? 'buy' : 'sell';
+    const dirLabel = sig.direction === 'BUY' ? 'شراء ▲' : 'بيع ▼';
+    const stake = Risk.calcStake(sig);
+
+    let html = `<div class="signal-card ${tierCls}">
+      <div class="sig-head">
+        <div>
+          <div class="sig-dir ${dirCls}">${dirLabel} · ${UTIL.esc(sym)}</div>
+          <div style="font-size:10px;color:var(--muted);margin-top:2px">${App.activeTimeframe}</div>
+        </div>
+        <div style="text-align:left">
+          <div class="score-big" style="color:${sig.tier === 'ELITE' ? '#a855f7' : sig.tier === 'STRONG' ? '#00ffa3' : sig.tier === 'MEDIUM' ? '#ffb020' : '#6b7280'}">${sig.score}</div>
+          <div class="tier ${tierCls}" style="margin-top:2px">${sig.tier}</div>
+        </div>
+      </div>
+      <div class="levels">
+        <div class="lvl entry"><div class="lbl">Entry</div><div class="val">${UTIL.fmt(sig.entry, digits)}</div></div>
+        <div class="lvl sl"><div class="lbl">Stop Loss</div><div class="val">${UTIL.fmt(sig.sl, digits)}</div></div>
+        <div class="lvl tp"><div class="lbl">TP1</div><div class="val">${UTIL.fmt(sig.tp1, digits)}</div></div>
+        <div class="lvl tp"><div class="lbl">TP2</div><div class="val">${UTIL.fmt(sig.tp2, digits)}</div></div>
+        <div class="lvl tp"><div class="lbl">TP3</div><div class="val">${UTIL.fmt(sig.tp3, digits)}</div></div>
+        <div class="lvl"><div class="lbl">ATR</div><div class="val">${UTIL.fmt(sig.atr, digits)}</div></div>
+      </div>
+      <div class="risk-box">
+        <div style="font-weight:600;font-size:11px;margin-bottom:6px">💰 حجم المركز المقترح</div>
+        <div class="meta-row"><span class="k">Stake</span><span class="v">$${UTIL.fmt(stake.stake, 2)}</span></div>
+        <div class="meta-row"><span class="k">Multiplier</span><span class="v">${App.settings.multiplier}×</span></div>
+        <div class="meta-row"><span class="k">المخاطرة</span><span class="v" style="color:var(--red)">${App.settings.riskPct}%</span></div>
+      </div>
+      <div style="margin-top:10px">
+        <div style="font-size:10px;color:var(--muted);text-transform:uppercase;font-weight:600;margin-bottom:4px">أسباب (${sig.reasons.length})</div>
+        <ul class="reasons-list">${sig.reasons.slice(0,10).map(r => `<li>${UTIL.esc(r)}</li>`).join('')}</ul>
+      </div>
+    </div>`;
+    p.innerHTML = html;
+  },
+
+  renderCards(){
+    for(const slot of ['gold','euro','nasdaq']){
+      const sym = App.settings[slot + 'Symbol'];
+      const sig = App.signals[sym];
+      const tEl = this.$('#tier_' + slot);
+      const gEl = this.$('#gauge_' + slot);
+      const cardEl = this.$('#card_' + slot);
+      if(!tEl || !gEl || !cardEl) continue;
+      if(sig && sig.tier !== 'NO TRADE'){
+        const cls = sig.tier.toLowerCase();
+        tEl.className = 'tier ' + cls;
+        tEl.textContent = sig.tier;
+        gEl.style.width = sig.score + '%';
+        gEl.style.background = sig.tier === 'ELITE' ? '#a855f7' : sig.tier === 'STRONG' ? '#00ffa3' : '#ffb020';
+        if(sig.tier === 'ELITE' || sig.tier === 'STRONG'){
+          cardEl.classList.remove('pulse-green','pulse-purple');
+          void cardEl.offsetWidth;
+          cardEl.classList.add(sig.tier === 'ELITE' ? 'pulse-purple' : 'pulse-green');
+          setTimeout(() => cardEl.classList.remove('pulse-green','pulse-purple'), 5400);
+        }
+      } else {
+        tEl.className = 'tier none';
+        tEl.textContent = 'انتظار';
+        gEl.style.width = '0%';
+      }
+    }
+  },
+
+  toast(msg, type='info'){
+    const c = this.$('#toastsRoot');
+    const t = UTIL.el('div', { class: 'toast ' + type }, msg);
+    c.appendChild(t);
+    setTimeout(() => {
+      t.style.opacity = '0';
+      t.style.transform = 'translateX(-20px)';
+      t.style.transition = 'all .3s';
+      setTimeout(() => t.remove(), 320);
+    }, 4400);
+  },
+
+  /* ---------- Modals ---------- */
+  openSettingsModal(){
+    const bg = UTIL.el('div', { class: 'modal-bg' });
+    const m = UTIL.el('div', { class: 'modal' });
+    bg.appendChild(m);
+    document.body.appendChild(bg);
+    bg.addEventListener('click', (e) => { if(e.target === bg && App.booted) bg.remove(); });
+    this._renderSettingsModal(m, !App.booted);
+  },
+
+  _renderSettingsModal(m, firstRun){
+    const s = App.settings;
+    m.innerHTML = `
+    <div class="modal-head">
+      <h3>${firstRun ? '⚙️ إعداد أولي — Deriv API' : '⚙️ إعدادات Deriv API'}</h3>
+      ${firstRun ? '' : '<button class="close-x" data-close>×</button>'}
+    </div>
+    <div class="modal-body">
+      ${firstRun ? '<div class="info-box">📌 احصل على <b>App ID</b> من <a href="https://api.deriv.com/dashboard" target="_blank" style="color:#38bdf8">api.deriv.com/dashboard</a> · و <b>API Token</b> من <a href="https://home.deriv.com/dashboard" target="_blank" style="color:#38bdf8">home.deriv.com/dashboard</a> → API tokens (اختر صلاحية <b>Trade</b>)</div>' : ''}
+      <div class="error-box" id="setErr"></div>
+      <div class="form-row">
+        <label>App ID *</label>
+        <input type="text" id="fAppId" class="mono" value="${UTIL.esc(s.appId)}" placeholder="مثال: 1089">
+      </div>
+      <div class="form-row">
+        <label>API Token *</label>
+        <input type="password" id="fToken" class="mono" value="${UTIL.esc(s.token)}" placeholder="ألصق التوكن هنا" autocomplete="off">
+      </div>
+      <div class="form-row">
+        <label>نوع الحساب</label>
+        <select id="fAccountType">
+          <option value="DEMO" ${s.accountType === 'DEMO' ? 'selected' : ''}>DEMO (تجريبي)</option>
+          <option value="REAL" ${s.accountType === 'REAL' ? 'selected' : ''}>REAL (حقيقي)</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <label>رمز الذهب</label>
+        <input type="text" id="fGold" class="mono" value="${UTIL.esc(s.goldSymbol)}">
+      </div>
+      <div class="form-row">
+        <label>رمز اليورو</label>
+        <input type="text" id="fEuro" class="mono" value="${UTIL.esc(s.euroSymbol)}">
+      </div>
+      <div class="form-row">
+        <label>رمز ناسداك</label>
+        <input type="text" id="fNasdaq" class="mono" value="${UTIL.esc(s.nasdaqSymbol)}">
+        <div class="hint">fallback: OTC_NDX → OTC_US100 → OTC_USTEC</div>
+      </div>
+      <div class="form-row" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+        <div><label>مخاطرة %</label><input type="number" id="fRisk" value="${s.riskPct}" min="0.1" max="5" step="0.1"></div>
+        <div><label>Multiplier</label><input type="number" id="fMult" value="${s.multiplier}" min="1" max="1000" step="1"></div>
+        <div><label>Min Score</label><input type="number" id="fMinScore" value="${s.minScore}" min="50" max="100"></div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      ${firstRun ? '' : '<button class="btn" data-close>إلغاء</button>'}
+      <button class="btn primary" id="btnValidateSave">${firstRun ? '✅ حفظ والدخول' : '💾 حفظ'}</button>
+    </div>`;
+
+    UTIL.$$('[data-close]', m).forEach(b => b.addEventListener('click', () => m.parentElement.remove()));
+
+    UTIL.$('#btnValidateSave', m).addEventListener('click', async () => {
+      const err = UTIL.$('#setErr', m);
+      err.classList.remove('on');
+      const newS = {
+        appId: UTIL.$('#fAppId', m).value.trim(),
+        token: UTIL.$('#fToken', m).value.trim(),
+        accountType: UTIL.$('#fAccountType', m).value,
+        goldSymbol: UTIL.$('#fGold', m).value.trim(),
+        euroSymbol: UTIL.$('#fEuro', m).value.trim(),
+        nasdaqSymbol: UTIL.$('#fNasdaq', m).value.trim(),
+        riskPct: parseFloat(UTIL.$('#fRisk', m).value) || 1,
+        multiplier: parseFloat(UTIL.$('#fMult', m).value) || 100,
+        minScore: parseFloat(UTIL.$('#fMinScore', m).value) || 55
+      };
+      if(!newS.appId){ err.textContent = '❌ App ID مطلوب'; err.classList.add('on'); return; }
+      if(!/^\d+$/.test(newS.appId)){ err.textContent = '❌ App ID يجب أن يكون رقمياً'; err.classList.add('on'); return; }
+      if(!newS.token){ err.textContent = '❌ API Token مطلوب'; err.classList.add('on'); return; }
+
+      err.textContent = '⏳ جارٍ التحقق من التوكن...';
+      err.classList.add('on');
+      err.style.background = 'rgba(56,189,248,.1)';
+      err.style.borderColor = 'rgba(56,189,248,.4)';
+      err.style.color = '#38bdf8';
+
+      // Save provisionally
+      const prev = { ...App.settings };
+      Object.assign(App.settings, newS);
+
+      // Reconnect + auth test
+      DerivAPI.connect();
+      // Wait for open
+      await new Promise(res => {
+        const start = Date.now();
+        const iv = setInterval(() => {
+          if(App.wsReady || Date.now()-start > 8000){ clearInterval(iv); res(); }
+        }, 100);
+      });
+      if(!App.wsReady){
+        err.textContent = '❌ تعذر الاتصال بـ Deriv WebSocket';
+        err.style.background = 'rgba(255,59,92,.1)';
+        err.style.borderColor = 'rgba(255,59,92,.4)';
+        err.style.color = '#ff3b5c';
+        Object.assign(App.settings, prev);
+        return;
+      }
+
+      try{
+        await DerivAPI.authorize(newS.token);
+        App.saveSettings();
+        err.textContent = '✅ تم التحقق بنجاح';
+        err.style.background = 'rgba(0,255,163,.1)';
+        err.style.borderColor = 'rgba(0,255,163,.4)';
+        err.style.color = '#00ffa3';
+        setTimeout(() => {
+          m.parentElement.remove();
+          if(!App.booted) App.boot();
+        }, 500);
+      } catch(e){
+        const msg = translateError(e);
+        err.textContent = '❌ ' + msg;
+        err.style.background = 'rgba(255,59,92,.1)';
+        err.style.borderColor = 'rgba(255,59,92,.4)';
+        err.style.color = '#ff3b5c';
+        Object.assign(App.settings, prev);
+      }
+    });
+  },
+
+  confirmAutoTrade(){
+    if(App.autoTrade.active){
+      AutoTrade.toggle(false);
+      UI.toast('🤖 Auto-Trade: OFF', 'info');
+      return;
+    }
+    const isVirtual = App.account?.is_virtual;
+    const isReal = isVirtual === 0 || isVirtual === false;
+    const bg = UTIL.el('div', { class: 'modal-bg' });
+    const m = UTIL.el('div', { class: 'modal' });
+    bg.appendChild(m);
+    document.body.appendChild(bg);
+    bg.addEventListener('click', (e) => { if(e.target === bg) bg.remove(); });
+    m.innerHTML = `
+      <div class="modal-head"><h3>🤖 تفعيل التداول الآلي</h3><button class="close-x" data-close>×</button></div>
+      <div class="modal-body">
+        <div class="warn-box">
+          ⚠️ سيتم تنفيذ العقود <b>تلقائياً</b> على حسابك (${isReal ? 'حقيقي' : 'تجريبي'}) عندما يصل تقييم الإشارة إلى
+          <b>${App.settings.minScore}</b> أو أعلى.<br><br>
+          المخاطرة لكل صفقة: <b>${App.settings.riskPct}%</b> من الرصيد ·
+          Multiplier: <b>${App.settings.multiplier}×</b>
+        </div>
+        ${isReal ? '<div class="error-box on">⚠️ أنت على حساب حقيقي — تأكد من المخاطر. بالتأكيد أنت مسؤول.</div>' : ''}
+      </div>
+      <div class="modal-foot">
+        <button class="btn" data-close>إلغاء</button>
+        <button class="btn primary" id="btnConfirmAuto">نعم، فعّل</button>
+      </div>`;
+    UTIL.$$('[data-close]', m).forEach(b => b.addEventListener('click', () => m.parentElement.remove()));
+    UTIL.$('#btnConfirmAuto', m).addEventListener('click', () => {
+      if(isReal) App._realConfirmed = true;
+      AutoTrade.toggle(true);
+      UI.toast('🤖 Auto-Trade: ON', 'success');
+      m.parentElement.remove();
+    });
+  },
+
+  confirmKillSwitch(){
+    const bg = UTIL.el('div', { class: 'modal-bg' });
+    const m = UTIL.el('div', { class: 'modal' });
+    bg.appendChild(m);
+    document.body.appendChild(bg);
+    bg.addEventListener('click', (e) => { if(e.target === bg) bg.remove(); });
+    m.innerHTML = `
+      <div class="modal-head"><h3>🛑 Kill Switch</h3><button class="close-x" data-close>×</button></div>
+      <div class="modal-body">
+        <div class="error-box on" style="background:rgba(255,59,92,.1);border-color:rgba(255,59,92,.4);color:#ff3b5c">
+          سيتم <b>إغلاق كل العقود المفتوحة</b> فوراً وإيقاف التداول الآلي.
+        </div>
+        <div>عدد العقود الحالية: <b>${App.positions.length}</b></div>
+      </div>
+      <div class="modal-foot">
+        <button class="btn" data-close>إلغاء</button>
+        <button class="btn danger" id="btnConfirmKill">🛑 نعم، أغلق الكل</button>
+      </div>`;
+    UTIL.$$('[data-close]', m).forEach(b => b.addEventListener('click', () => m.parentElement.remove()));
+    UTIL.$('#btnConfirmKill', m).addEventListener('click', async () => {
+      m.parentElement.remove();
+      await AutoTrade.killSwitch();
+    });
+  },
+
+  exportCSV(){
+    const trades = Journal.trades();
+    if(!trades.length){ this.toast('لا توجد صفقات', 'warn'); return; }
+    const headers = ['id','contractId','openedAt','closedAt','symbol','direction','stake','multiplier','entry','sl','tp1','tp2','tp3','score','tier','status','exitReason','pnl'];
+    const rows = [headers.join(',')];
+    for(const t of trades){
+      rows.push(headers.map(h => {
+        let v = t[h];
+        if(v == null) return '';
+        return '"' + String(v).replace(/"/g,'""') + '"';
+      }).join(','));
+    }
+    const blob = new Blob(['\uFEFF' + rows.join('\n')], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'deriv_trades_' + UTIL.dateStr(Date.now()) + '.csv';
+    a.click(); URL.revokeObjectURL(url);
+  },
+
+  exportJSON(){
+    const blob = new Blob([JSON.stringify({ exportedAt: new Date().toISOString(), trades: Journal.trades() }, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'deriv_trades_' + UTIL.dateStr(Date.now()) + '.json';
+    a.click(); URL.revokeObjectURL(url);
+  }
+};
+
+/* ===================== 16. Boot ===================== */
 App.boot = async function(){
   if(App.booted) return;
   App.booted = true;
@@ -2246,99 +2063,71 @@ App.boot = async function(){
   UTIL.$('#appContent').classList.remove('hidden');
   UI.init();
 
-  PathCache.load();
-  Logger.data('Booting with settings:', { accountId: App.settings.accountId, gold: App.settings.goldSymbol, nasdaq: App.settings.nasdaqSymbol, euro: App.settings.euroSymbol });
+  Logger.data('Booting with:', { appId: App.settings.appId, gold: App.settings.goldSymbol, euro: App.settings.euroSymbol, nasdaq: App.settings.nasdaqSymbol });
 
-  // Account info
-  await App.refreshAccount();
+  // Fetch active symbols
+  App.fetchActiveSymbols().catch(e => Logger.warn('active_symbols failed', e.message));
 
-  // Check account type
-  const type = (App.account?.type || '').toString().toUpperCase();
-  if(type && type !== 'DEMO'){
-    AutoTrade.toggle(false);
-    UI.toast('⚠️ TickerAll المجاني يدعم الحسابات التجريبية فقط. Auto-Trade معطّل.', 'error');
-  }
-
-  // Auto-detect Nasdaq symbol
-  autoDetectNasdaqSymbol().catch(e => Logger.warn('Nasdaq detection failed', e.message));
-
-  // Initial candles for all symbols
+  // Subscribe to ticks + candles
   for(const slot of ['gold','euro','nasdaq']){
-    await App.loadCandles(App.settings[slot + 'Symbol']);
-    await UTIL.sleep(150);
+    const sym = App.settings[slot + 'Symbol'];
+    DerivAPI.subscribeTicks(sym);
+    DerivAPI.subscribeCandles(sym, CONFIG.TF[App.activeTimeframe].granularity);
+    await UTIL.sleep(200);
   }
 
-  // Charts
-  App.settings.chartMode = App.settings.chartMode || 'tv';
+  // Initial chart
+  ChartEngine.mode = 'tv';
   ChartEngine.reload();
   UI.selectSlot('gold');
 
-  // Signals
-  App.recomputeSignals();
+  // Portfolio polling every 5s
+  clearInterval(App._portfolioTimer);
+  App._portfolioTimer = setInterval(() => App.refreshPortfolio(), 5000);
 
-  // WebSocket
-  WS.connect();
-
-  // Timers
-  clearInterval(App._accountTimer);
-  App._accountTimer = setInterval(() => App.refreshAccount(), 5000);
-
-  clearInterval(App._positionsTimer);
-  App._positionsTimer = setInterval(() => App.refreshPositions(), 5000);
-
-  clearInterval(App._candleTimer);
-  App._candleTimer = setInterval(async () => {
-    for(const slot of ['gold','euro','nasdaq']){
-      await App.loadCandles(App.settings[slot + 'Symbol']);
-    }
-  }, 60000);
-
-  clearInterval(App._signalTimer);
-  App._signalTimer = setInterval(() => App.recomputeSignals(), 30000);
-
-  // Restore AutoTrade from settings
-  if(App.settings.autoTrade && type === 'DEMO'){
-    AutoTrade.active = true;
+  // Restore auto-trade from settings
+  if(App.settings.autoTrade){
+    App.autoTrade.active = true;
     UI.renderAutoTradeBtn();
     UI.toast('🤖 Auto-Trade استُعيد من الإعدادات', 'info');
   }
 
-  // Initial refresh
-  await App.refreshPositions();
-
-  Logger.data('App boot complete');
+  Logger.data('Boot complete');
 };
 
 function start(){
   App.loadSettings();
   Journal.load();
-  PathCache.load();
 
-  // Global unload cleanup
   window.addEventListener('beforeunload', () => {
-    WS.disconnect();
-    clearInterval(App._accountTimer);
-    clearInterval(App._positionsTimer);
-    clearInterval(App._candleTimer);
-    clearInterval(App._signalTimer);
-    if(App._pricePollTimer) clearInterval(App._pricePollTimer);
+    clearInterval(App._pingTimer);
+    clearInterval(App._portfolioTimer);
+    clearTimeout(App._reconnectTimer);
+    if(App.ws){ try{ App.ws.close(); }catch(e){} }
   });
 
-  if(App.settings.apiKey && App.settings.accountId){
-    // Quick validate then boot
-    API.getAccount().then(r => {
-      if(r.ok){
-        App.account = r.data?.data || r.data?.account || r.data || {};
-        App.boot();
-      } else {
-        UI.toast('⚠️ فشل التحقق التلقائي، افتح الإعدادات', 'warn');
+  if(App.settings.appId && App.settings.token){
+    // Auto-boot: connect + auth
+    DerivAPI.connect();
+    let tries = 0;
+    const iv = setInterval(async () => {
+      tries++;
+      if(App.wsReady){
+        clearInterval(iv);
+        try{
+          await DerivAPI.authorize(App.settings.token);
+          App.boot();
+        } catch(e){
+          UI.toast('⚠️ فشل التحقق: ' + translateError(e), 'error');
+          UI.openSettingsModal();
+        }
+      } else if(tries > 80){
+        clearInterval(iv);
+        UI.toast('⚠️ تعذر الاتصال بـ Deriv', 'error');
         UI.openSettingsModal();
       }
-    }).catch(() => {
-      UI.openSettingsModal();
-    });
+    }, 100);
   } else {
-    // First run — show settings modal
     UI.openSettingsModal();
   }
 }
