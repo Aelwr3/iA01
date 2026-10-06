@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <meta name="theme-color" content="#0a0e17">
-<title>TradeRadar PRO MAX XXX v6.0</title>
+<title>TradeRadar PRO MAX XXX v6.1</title>
 <style>
 :root{
   --bg:#0a0e17;--surface:#111827;--panel:#161c2b;--border:#1f2a3d;
@@ -23,8 +23,6 @@ input.invalid{border-color:var(--red)!important}
 .mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
 .up{color:var(--green)}.down{color:var(--red)}.neutral{color:var(--muted)}
 .hidden{display:none!important}
-.field-hint{font-size:11px;margin-top:4px;min-height:14px;line-height:1.4}
-.field-hint.ok{color:var(--green)}.field-hint.err{color:var(--red)}.field-hint.info{color:var(--muted)}
 
 .topbar{display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--surface);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:50;flex-wrap:wrap}
 .logo{font-weight:800;font-size:13px;display:flex;align-items:center;gap:6px;white-space:nowrap}
@@ -80,7 +78,8 @@ input.invalid{border-color:var(--red)!important}
 .gauge{width:100%;height:6px;background:var(--border);border-radius:3px;overflow:hidden;margin-top:6px}
 .gauge > div{height:100%;transition:width .4s,background .4s;border-radius:3px}
 
-#chart{width:100%;height:340px;border-radius:8px;overflow:hidden;background:#0f1523}
+#chart{width:100%;height:420px;border-radius:8px;overflow:hidden;background:#0f1523;position:relative}
+
 .signal-box{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:12px}
 .sig-tier{padding:5px 10px;border-radius:8px;font-weight:800;font-size:12px;display:inline-block}
 .tier-elite{background:rgba(168,85,247,.15);color:var(--purple);border:1px solid rgba(168,85,247,.4)}
@@ -147,7 +146,7 @@ table.data td{padding:7px 5px;border-bottom:1px solid var(--border);font-family:
   .topbar{padding:6px 8px;gap:5px}
   .logo{font-size:11px}
   .container{padding:8px}
-  #chart{height:280px}
+  #chart{height:320px}
   .tab{padding:8px 9px;font-size:11px}
   .chip{padding:3px 7px;font-size:9px}
   .btn{padding:7px 10px;font-size:11px;min-height:34px}
@@ -172,9 +171,10 @@ table.data td{padding:7px 5px;border-bottom:1px solid var(--border);font-family:
 <body>
 
 <header class="topbar">
-  <div class="logo"><span class="dot"></span>TradeRadar <span style="color:var(--green)">v6.0</span></div>
+  <div class="logo"><span class="dot"></span>TradeRadar <span style="color:var(--green)">v6.1</span></div>
   <span class="chip"><span class="status-dot" id="connDot"></span><span id="connText">جاهز</span></span>
   <span class="chip">🕐 <span class="val mono" id="clock">--:--:--</span></span>
+  <span class="chip">⏱ <span class="val mono" id="lastUpdate">—</span></span>
   <span class="chip" id="sessChip">💤 —</span>
   <span class="chip">🔑 <span class="val" id="keysChip">0</span></span>
   <div class="spacer"></div>
@@ -209,6 +209,7 @@ table.data td{padding:7px 5px;border-bottom:1px solid var(--border);font-family:
       <div style="display:flex;gap:5px;margin-bottom:8px;flex-wrap:wrap">
         <button class="btn sm tf-btn" data-tf="5min">5m</button>
         <button class="btn sm tf-btn active" data-tf="15min">15m</button>
+        <button class="btn sm tf-btn" data-tf="30min">30m</button>
         <button class="btn sm tf-btn" data-tf="1h">1H</button>
         <button class="btn sm tf-btn" data-tf="4h">4H</button>
         <button class="btn sm tf-btn" data-tf="1day">1D</button>
@@ -284,7 +285,7 @@ table.data td{padding:7px 5px;border-bottom:1px solid var(--border);font-family:
     <div class="panel"><h3>توزيع R</h3><canvas id="rCanvas" height="220" style="width:100%"></canvas></div>
   </div>
   <div class="panel" style="margin-top:10px"><h3>خريطة الساعات (R)</h3><div class="heat" id="heatHour"></div></div>
-  <div class="panel" style="margin-top:10px"><h3>أداء الاستراتيجيات (Live)</h3><div class="scroll-x"><table class="data" id="stratPerfTable"><thead><tr><th>الاستراتيجية</th><th>صفقات</th><th>WR</th><th>R</th><th>P/L</th></tr></thead><tbody></tbody></table></div></div>
+  <div class="panel" style="margin-top:10px"><h3>أداء الاستراتيجيات (Backtest)</h3><div class="scroll-x"><table class="data" id="stratPerfTable"><thead><tr><th>الاستراتيجية</th><th>صفقات</th><th>WR</th><th>Avg R</th><th>Expectancy</th></tr></thead><tbody></tbody></table></div></div>
 </main>
 
 <main class="container hidden" id="view-settings">
@@ -327,12 +328,12 @@ table.data td{padding:7px 5px;border-bottom:1px solid var(--border);font-family:
         <button class="btn primary sm" id="addSymBtn">+ إضافة</button>
       </div>
       <div id="symbolsList"></div>
-      <div style="margin-top:10px;font-size:11px;color:var(--muted)">💡 الرموز المدعومة: XAU/USD, EUR/USD, GBP/USD, NDX, SPX, BTC/USD, ETH/USD, AAPL, TSLA, ...</div>
+      <div style="margin-top:10px;font-size:11px;color:var(--muted)">💡 مدعوم: XAU/USD, EUR/USD, GBP/USD, NDX, SPX, BTC/USD, ETH/USD, AAPL, TSLA ...</div>
     </div>
 
     <div class="panel">
       <h3>⚙️ إعدادات عامة</h3>
-      <div class="row" style="margin-bottom:10px"><label>الإطار الزمني الافتراضي</label><select id="setDefaultTf"><option value="5min">5 دقائق</option><option value="15min" selected>15 دقيقة</option><option value="1h">1 ساعة</option><option value="4h">4 ساعات</option><option value="1day">يومي</option></select></div>
+      <div class="row" style="margin-bottom:10px"><label>الإطار الزمني الافتراضي</label><select id="setDefaultTf"><option value="5min">5 دقائق</option><option value="15min" selected>15 دقيقة</option><option value="30min">30 دقيقة</option><option value="1h">1 ساعة</option><option value="4h">4 ساعات</option><option value="1day">يومي</option></select></div>
       <div class="row" style="margin-bottom:10px"><label>فاصل التحديث (ثواني، min 30)</label><input type="number" id="setRefreshSec" value="30" min="30" max="600" step="5"></div>
       <div class="row" style="margin-bottom:10px"><label>الثيم</label><select id="setTheme"><option value="dark">داكن</option><option value="light">فاتح</option></select></div>
       <div class="row" style="margin-bottom:10px"><label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="setSound" checked style="width:auto"> تنبيه صوتي</label></div>
@@ -351,11 +352,11 @@ table.data td{padding:7px 5px;border-bottom:1px solid var(--border);font-family:
 <div id="modalRoot"></div>
 <div id="printArea"></div>
 
-<script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
+<script src="https://s3.tradingview.com/tv.js"></script>
 <script>
 "use strict";
 /* ============================================================
-   TradeRadar PRO MAX XXX v6.0 — TwelveData Paper Trading
+   TradeRadar PRO MAX XXX v6.1 — TradingView + TwelveData
    ============================================================ */
 window.App = window.App || {};
 const App = window.App;
@@ -366,7 +367,7 @@ const App = window.App;
 App.Config = {
   API_BASE: 'https://api.twelvedata.com',
   DAILY_LIMIT: 800,
-  KEY_STORAGE:'tradeRadar_v6',
+  KEY_STORAGE:'tradeRadar_v61',
   KEY_KEYS:'tradeRadar_keys_v6',
   KEY_STRAT:'tradeRadar_strategies_v6',
   KEY_JOURNAL:'tradeRadar_journal_v6',
@@ -452,12 +453,10 @@ App.Account = {
       const r = localStorage.getItem(CFG.KEY_ACCOUNT);
       if(r){
         const d = JSON.parse(r);
-        // reset day if new UTC day
         if(d.dayStart !== utcDateStr()){
           d.dayStart = utcDateStr();
           d.dayStartBalance = d.balance;
           d.dayTradesCount = 0;
-          // if halted due to daily, unhalt
           if(d.haltReason && d.haltReason.includes('يومي')){
             d.halted = false; d.haltReason = '';
           }
@@ -501,7 +500,7 @@ App.Account = {
 };
 
 /* ============================================================
-   3. KEY POOL (dynamic)
+   3. KEY POOL
    ============================================================ */
 App.KeyPool = {
   _cache:null,
@@ -540,7 +539,6 @@ App.KeyPool = {
     }
     return k;
   },
-  /** Get best available key or null */
   acquire(){
     const a = this.list();
     const now = Date.now();
@@ -562,16 +560,16 @@ App.KeyPool = {
   },
   markRateLimit(id){
     const until = Date.now() + 60000;
-    this.update(id, { coolingUntil: until, lastStatus:'cooling', lastError:'429 rate limit', errorCount: (this.list().find(k=>k.id===id)?.errorCount||0)+1 });
-  },
-  markDailyLimit(id){
-    this.update(id, { dead: true, deadReason:'daily limit reached', lastStatus:'dead', errorCount: (this.list().find(k=>k.id===id)?.errorCount||0)+1 });
+    const cur = this.list().find(k=>k.id===id);
+    this.update(id, { coolingUntil: until, lastStatus:'cooling', lastError:'429 rate limit', errorCount: (cur?.errorCount||0)+1 });
   },
   markDead(id, reason){
-    this.update(id, { dead: true, deadReason: reason||'invalid', lastStatus:'dead', errorCount: (this.list().find(k=>k.id===id)?.errorCount||0)+1 });
+    const cur = this.list().find(k=>k.id===id);
+    this.update(id, { dead: true, deadReason: reason||'invalid', lastStatus:'dead', errorCount: (cur?.errorCount||0)+1 });
   },
   markError(id, msg){
-    this.update(id, { lastError: msg||'error', errorCount: (this.list().find(k=>k.id===id)?.errorCount||0)+1 });
+    const cur = this.list().find(k=>k.id===id);
+    this.update(id, { lastError: msg||'error', errorCount: (cur?.errorCount||0)+1 });
   },
   totalUsage(){
     const a = this.list();
@@ -586,29 +584,21 @@ App.KeyPool = {
    4. TWELVEDATA CLIENT
    ============================================================ */
 App.TD = {
-  _currentKeyId:null,
-
   async _fetch(path, params={}){
     const key = App.KeyPool.acquire();
     if(!key) throw new Error('NO_KEYS');
-    this._currentKeyId = key.id;
     const url = new URL(CFG.API_BASE + path);
     for(const k in params) url.searchParams.set(k, params[k]);
     url.searchParams.set('apikey', key.value);
     let res;
-    try{
-      res = await fetch(url.toString());
-    }catch(e){
-      App.KeyPool.markError(key.id, 'network');
-      throw new Error('NETWORK');
-    }
+    try{ res = await fetch(url.toString()); }
+    catch(e){ App.KeyPool.markError(key.id, 'network'); throw new Error('NETWORK'); }
     let data;
     try{ data = await res.json(); }catch(e){ throw new Error('PARSE'); }
-    // Handle TwelveData errors
+
     if(data.code === 429 || (data.status==='error' && /limit/i.test(data.message||''))){
       App.KeyPool.markRateLimit(key.id);
-      // Retry with next key
-      if(App.KeyPool.activeCount() > 0 && App.KeyPool.totalUsage().used < App.KeyPool.totalUsage().cap){
+      if(App.KeyPool.activeCount() > 0){
         return this._fetch(path, params);
       }
       throw new Error('RATE_LIMIT');
@@ -648,8 +638,7 @@ App.TD = {
     try{
       const url = `${CFG.API_BASE}/api_usage?apikey=${encodeURIComponent(keyValue)}`;
       const res = await fetch(url);
-      const d = await res.json();
-      return d;
+      return await res.json();
     }catch(e){ return null; }
   }
 };
@@ -834,19 +823,16 @@ App.Fib = {
     }
     if(!highs.length || !lows.length) return null;
     const lastH = highs[highs.length-1], lastL = lows[lows.length-1];
-    const trend = lastH.i > lastL.i ? 'down' : 'up';  // last swing = high => recent is down move from high? Actually if last swing is high, then we're below it => down context
-    return { high: lastH, low: lastL, trend, highs, lows };
+    return { high: lastH, low: lastL, highs, lows };
   },
   levels(swing){
     const { high, low } = swing;
     const range = high.price - low.price;
-    const dir = high.i > low.i ? 'down' : 'up'; // last moved from low to high (up) or high to low (down)
-    // Retracement levels
+    const dir = high.i > low.i ? 'down' : 'up';
     const retr = [0, 0.236, 0.382, 0.5, 0.618, 0.786, 1].map(r=>{
       const price = dir==='up' ? high.price - range*r : low.price + range*r;
       return { ratio: r, price };
     });
-    // Extensions
     const ext = [1.272, 1.618, 2.618].map(r=>{
       const price = dir==='up' ? low.price + range*r : high.price - range*r;
       return { ratio: r, price };
@@ -855,22 +841,16 @@ App.Fib = {
   },
   zone(price, levels){
     if(!levels) return 'unknown';
-    const { retr } = levels;
-    // Check golden zone
+    const { retr, dir } = levels;
     const g1 = retr.find(r=>r.ratio===0.618)?.price;
     const g2 = retr.find(r=>r.ratio===0.786)?.price;
     const d = retr.find(r=>r.ratio===0.382)?.price;
     if(g1==null||g2==null||d==null) return 'unknown';
-    const min618 = Math.min(g1, g2), max618 = Math.max(g1, g2);
-    const min382 = Math.min(retr[1].price, d), max382 = Math.max(retr[1].price, d);
-    if(price >= min618 && price <= max618) return 'golden';
-    if(levels.dir==='up'){
-      if(price > max618) return 'premium'; // above golden
-      if(price < min382) return 'discount';
-    } else {
-      if(price > max618) return 'premium';
-      if(price < min382) return 'discount';
-    }
+    const minG = Math.min(g1, g2), maxG = Math.max(g1, g2);
+    const minD = Math.min(retr[1].price, d), maxD = Math.max(retr[1].price, d);
+    if(price >= minG && price <= maxG) return 'golden';
+    if(price > maxG) return 'premium';
+    if(price < minD) return 'discount';
     return 'mid';
   }
 };
@@ -1053,13 +1033,11 @@ App.Analysis = {
   },
 
   async evaluate(symbol, tf){
-    // Fetch candles for MTF
     const tfsNeeded = ['5min','15min','1h','4h','1day'];
     const candlesByTf = {};
     for(const t of tfsNeeded){
-      try{
-        candlesByTf[t] = await App.TD.timeSeries(symbol, t, 200);
-      }catch(e){ console.warn('candles fail', symbol, t, e.message); }
+      try{ candlesByTf[t] = await App.TD.timeSeries(symbol, t, 200); }
+      catch(e){ console.warn('candles fail', symbol, t, e.message); }
     }
     const candles = candlesByTf[tf];
     if(!candles || candles.length<80) return { error:'بيانات غير كافية' };
@@ -1073,16 +1051,13 @@ App.Analysis = {
     const addB = (p,t)=>{ buyScore+=p; reasons.push({side:'buy',pts:p,txt:t}); };
     const addS = (p,t)=>{ sellScore+=p; reasons.push({side:'sell',pts:p,txt:t}); };
 
-    // Category A — Trend
     if(mtf.aligned===5){
-      if(mtf.biasHtf==='up') addB(30,'توافق كامل للأطر (صاعد)');
-      else if(mtf.biasHtf==='down') addS(30,'توافق كامل للأطر (هابط)');
+      if(mtf.biasHtf==='up') addB(30,'توافق كامل (صاعد)');
+      else if(mtf.biasHtf==='down') addS(30,'توافق كامل (هابط)');
     } else if(mtf.aligned>=3){
       if(mtf.biasHtf==='up') addB(20,'توافق HTF+MTF صاعد');
       else if(mtf.biasHtf==='down') addS(20,'توافق HTF+MTF هابط');
-    } else {
-      addB(5,'LTF فقط'); addS(5,'LTF فقط');
-    }
+    } else { addB(5,'LTF فقط'); addS(5,'LTF فقط'); }
     if(mtf.biasHtf==='mixed' && mtf.biasMtf==='mixed'){
       buyScore-=20; sellScore-=20;
       reasons.push({side:'both',pts:-20,txt:'تعارض بين الأطر'});
@@ -1090,15 +1065,14 @@ App.Analysis = {
     const adxV = ind.adx.adx[last];
     if(adxV!=null){
       if(adxV>25){
-        if(ind.adx.pDI[last]>ind.adx.mDI[last]) addB(10,`ADX=${adxV.toFixed(1)} قوي صاعد`);
-        else addS(10,`ADX=${adxV.toFixed(1)} قوي هابط`);
+        if(ind.adx.pDI[last]>ind.adx.mDI[last]) addB(10,`ADX=${adxV.toFixed(1)} صاعد`);
+        else addS(10,`ADX=${adxV.toFixed(1)} هابط`);
       } else if(adxV<20){
         buyScore-=10; sellScore-=10;
         reasons.push({side:'both',pts:-10,txt:`ADX=${adxV.toFixed(1)} ضعيف`});
       }
     }
 
-    // Category B — Momentum
     const rsiV = ind.rsi[last];
     if(rsiV!=null){
       if(rsiV>70) addS(8,`RSI=${rsiV.toFixed(1)} تشبع شرائي`);
@@ -1119,7 +1093,6 @@ App.Analysis = {
       else if(k>80 && k<d) addS(10,'Stoch تشبع شرائي');
     }
 
-    // Category C — SMC + Patterns + Fibonacci
     const swing = App.Fib.swings(candles, 5, 80);
     let fibLevels = null, fibZone = 'unknown';
     if(swing){
@@ -1163,7 +1136,6 @@ App.Analysis = {
       else if(dv.type==='bear'){ addS(15,'دايفرجنس RSI هبوطي'); buyScore-=15; reasons.push({side:'buy',pts:-15,txt:'دايفرجنس معاكس'}); }
     }
 
-    // Category D — Volatility
     const atrV = ind.atr[last];
     const atrArr = ind.atr.filter(v=>v!=null);
     if(atrV!=null && atrArr.length>20){
@@ -1172,14 +1144,12 @@ App.Analysis = {
       if(pct>=30 && pct<=70){ addB(5,'ATR طبيعي'); addS(5,'ATR طبيعي'); }
     }
     const bbw = ind.bb.bw[last], bbwP = ind.bb.bw[last-5];
-    if(bbw!=null && bbwP!=null && bbw>bbwP*1.4){ addB(10,'انفجار Bollinger'); addS(10,'انفجار Bollinger'); }
+    if(bbw!=null && bbwP!=null && bbw>bbwP*1.4){ addB(10,'انفجار BB'); addS(10,'انفجار BB'); }
 
-    // Category E — Session
     const sess = this.sessionInfo();
     if(sess.inKill){ addB(5,`Kill Zone ${sess.kills.join('/')}`); addS(5,`Kill Zone ${sess.kills.join('/')}`); }
     if(sess.asian){ buyScore-=10; sellScore-=10; reasons.push({side:'both',pts:-10,txt:'جلسة آسيوية ضعيفة'}); }
 
-    // VWAP filter
     const vwapV = ind.vwap[last];
     if(vwapV!=null){
       if(price<vwapV){ buyScore-=10; reasons.push({side:'buy',pts:-10,txt:'السعر تحت VWAP'}); }
@@ -1194,7 +1164,6 @@ App.Analysis = {
 
     const atrSafe = atrV || price*0.001;
     let sl = dir==='buy' ? price - 1.5*atrSafe : price + 1.5*atrSafe;
-    // Fibonacci-based SL adjustment: tighter of the two
     if(fibLevels){
       const fibSL = dir==='buy' ? fibLevels.low : fibLevels.high;
       if(dir==='buy' && fibSL < price && fibSL > (price - 3*atrSafe)) sl = Math.max(sl, fibSL - 0.1*atrSafe);
@@ -1249,7 +1218,7 @@ App.Alerts = {
   },
   errMsg(code){
     const m = {
-      'NO_KEYS':'جميع المفاتيح استُنفدت — أضف مفتاحاً جديداً أو انتظر منتصف الليل UTC',
+      'NO_KEYS':'جميع المفاتيح استُنفدت — أضف مفتاحاً جديداً',
       'RATE_LIMIT':'تجاوزت حد الطلبات — جاري تبديل المفتاح',
       'INVALID_KEY':'مفتاح API غير صالح — تحقق من الإعدادات',
       'NETWORK':'فشل الاتصال بالشبكة — تحقق من الإنترنت',
@@ -1261,45 +1230,113 @@ App.Alerts = {
 };
 
 /* ============================================================
-   11. CHART
+   11. CHART — TradingView Widget
    ============================================================ */
 App.Chart = {
-  chart:null, series:null, currentSymbol:null, currentTf:null,
-  init(){
-    const el = document.getElementById('chart');
-    if(!el || !window.LightweightCharts) return;
-    try{
-      this.chart = LightweightCharts.createChart(el,{
-        layout:{ background:{color:'#0f1523'}, textColor:'#7b8794', fontSize:10 },
-        grid:{ vertLines:{color:'#1f2a3d'}, horzLines:{color:'#1f2a3d'} },
-        timeScale:{ timeVisible:true, secondsVisible:false },
-        rightPriceScale:{ borderColor:'#1f2a3d' }
-      });
-      this.series = this.chart.addCandlestickSeries({
-        upColor:'#00e5a0', downColor:'#ff3b5c',
-        wickUpColor:'#00e5a0', wickDownColor:'#ff3b5c', borderVisible:false
-      });
-      window.addEventListener('resize', ()=>{ if(this.chart) this.chart.applyOptions({width:el.clientWidth}); });
-    }catch(e){ console.error(CFG.LOG.ERR,'chart init', e); }
+  _loaded:false,
+  _lastSym:null,
+  _lastTf:null,
+
+  tvSymbol(symbol){
+    const map = {
+      'XAU/USD': 'OANDA:XAUUSD',
+      'XAUUSD':  'OANDA:XAUUSD',
+      'EUR/USD': 'FX:EURUSD',
+      'EURUSD':  'FX:EURUSD',
+      'GBP/USD': 'FX:GBPUSD',
+      'GBPUSD':  'FX:GBPUSD',
+      'USD/JPY': 'FX:USDJPY',
+      'AUD/USD': 'FX:AUDUSD',
+      'USD/CAD': 'FX:USDCAD',
+      'USD/CHF': 'FX:USDCHF',
+      'NZD/USD': 'FX:NZDUSD',
+      'NDX':     'NASDAQ:NDX',
+      'NAS100':  'NASDAQ:NDX',
+      'US100':   'NASDAQ:NDX',
+      'SPX':     'SP:SPX',
+      'US500':   'SP:SPX',
+      'DJI':     'DJ:DJI',
+      'BTC/USD': 'BITSTAMP:BTCUSD',
+      'BTCUSD':  'BITSTAMP:BTCUSD',
+      'ETH/USD': 'BITSTAMP:ETHUSD',
+      'AAPL':    'NASDAQ:AAPL',
+      'TSLA':    'NASDAQ:TSLA',
+      'MSFT':    'NASDAQ:MSFT',
+      'GOOGL':   'NASDAQ:GOOGL',
+      'AMZN':    'NASDAQ:AMZN',
+      'META':    'NASDAQ:META',
+      'NVDA':    'NASDAQ:NVDA'
+    };
+    return map[symbol] || symbol.replace('/','');
   },
-  async load(symbol, tf){
-    if(!this.series) return;
-    try{
-      const candles = await App.TD.timeSeries(symbol, tf, 500);
-      if(!candles || !candles.length) return;
-      this.currentSymbol = symbol; this.currentTf = tf;
-      const data = candles.map(c=>({ time:c.epoch, open:c.open, high:c.high, low:c.low, close:c.close }));
-      // Ensure sorted unique times
-      data.sort((a,b)=>a.time-b.time);
-      const dedup = [];
-      let lastT = -1;
-      for(const d of data){ if(d.time > lastT){ dedup.push(d); lastT=d.time; } }
-      this.series.setData(dedup);
-      try{ this.chart.timeScale().fitContent(); }catch(e){}
-    }catch(e){
-      console.error(CFG.LOG.ERR,'chart.load', e);
-      App.Alerts.toast('فشل تحميل الشارت: ' + App.Alerts.errMsg(e.message),'error');
-    }
+
+  tvInterval(tf){
+    const map = {
+      '1min':'1','5min':'5','15min':'15','30min':'30',
+      '1h':'60','2h':'120','4h':'240','1day':'D','1week':'W'
+    };
+    return map[tf] || '15';
+  },
+
+  init(){
+    if(this._loaded) return;
+    this._loaded = true;
+    console.log('📈 Chart.init() called');
+  },
+
+  load(symbol, tf){
+    const container = document.getElementById('chart');
+    if(!container){ console.warn('no #chart'); return; }
+    if(symbol === this._lastSym && tf === this._lastTf) return;
+    this._lastSym = symbol;
+    this._lastTf = tf;
+
+    container.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#7b8794;font-size:12px">⏳ جاري تحميل الشارت...</div>';
+
+    const tryCreate = (attempt=0)=>{
+      if(!window.TradingView){
+        if(attempt > 25){
+          container.innerHTML = '<div style="padding:20px;text-align:center;color:#ff3b5c;font-size:12px">⚠️ تعذر تحميل TradingView — تحقق من الإنترنت</div>';
+          return;
+        }
+        setTimeout(()=>tryCreate(attempt+1), 200);
+        return;
+      }
+      container.innerHTML = '';
+      const innerId = 'tv_' + Date.now();
+      const inner = document.createElement('div');
+      inner.id = innerId;
+      inner.style.width = '100%';
+      inner.style.height = '100%';
+      container.appendChild(inner);
+
+      try{
+        new TradingView.widget({
+          container_id: innerId,
+          symbol: this.tvSymbol(symbol),
+          interval: this.tvInterval(tf),
+          timezone: 'Etc/UTC',
+          theme: 'dark',
+          style: '1',
+          locale: 'ar',
+          toolbar_bg: '#0f1523',
+          enable_publishing: false,
+          hide_side_toolbar: true,
+          allow_symbol_change: false,
+          save_image: false,
+          autosize: true,
+          studies: [
+            'RSI@tv-basicstudies',
+            'MACD@tv-basicstudies'
+          ]
+        });
+        console.log(CFG.LOG.DATA, 'TV loaded:', this.tvSymbol(symbol), this.tvInterval(tf));
+      }catch(e){
+        console.error(CFG.LOG.ERR, 'TV widget error:', e);
+        container.innerHTML = '<div style="padding:20px;text-align:center;color:#ff3b5c;font-size:12px">⚠️ خطأ في تحميل الشارت</div>';
+      }
+    };
+    tryCreate();
   }
 };
 
@@ -1487,51 +1524,38 @@ App.Backtest = {
    14. PAPER TRADES
    ============================================================ */
 App.PaperTrades = {
-  /** Open a paper trade */
   async open(sig, strategyId=null){
     const rules = App.Account.checkRules();
-    if(!rules.ok){
-      App.Alerts.toast('❌ ' + rules.errors[0],'error', 6000);
-      return null;
-    }
+    if(!rules.ok){ App.Alerts.toast('❌ ' + rules.errors[0],'error', 6000); return null; }
     if(sig.score < App.Store.get('minScoreRequired')){
       App.Alerts.toast(`❌ Score=${sig.score} أقل من الحد الأدنى ${App.Store.get('minScoreRequired')}`,'error');
       return null;
     }
     const account = App.Account.load();
     const riskPct = App.Store.get('riskPercentPerTrade')/100;
-    const riskAmount = account.balance * riskPct;
+    const riskAmount = +(account.balance * riskPct).toFixed(2);
     const slDist = Math.abs(sig.levels.entry - sig.levels.sl);
-    const stake = Math.max(1, +riskAmount.toFixed(2));
+    const stake = Math.max(1, riskAmount);
 
     const trade = {
       id: 't_'+Date.now()+'_'+Math.random().toString(36).slice(2,6),
       openedAt: Date.now(),
-      symbol: sig.symbol,
-      direction: sig.direction,
-      entry: sig.levels.entry,
-      sl: sig.levels.sl,
-      tp1: sig.levels.tp1,
-      tp2: sig.levels.tp2,
-      tp3: sig.levels.tp3,
-      score: sig.score,
-      tier: sig.tier.key,
+      symbol: sig.symbol, direction: sig.direction,
+      entry: sig.levels.entry, sl: sig.levels.sl,
+      tp1: sig.levels.tp1, tp2: sig.levels.tp2, tp3: sig.levels.tp3,
+      score: sig.score, tier: sig.tier.key,
       reasons: sig.reasons.filter(r=>r.side===sig.direction||r.side==='both').slice(0,8).map(r=>r.txt),
       timeframe: CFG.TIMEFRAMES[App.UI.state.currentTf] || 'M15',
       session: sig.session.kills.join(',') || '—',
       riskPercent: App.Store.get('riskPercentPerTrade'),
-      riskAmount,
-      stake,
-      slDistance: slDist,
+      riskAmount, stake, slDistance: slDist,
       rMultiple: 0, pnl: 0, pnlPips: 0,
       mae: 0, mfe: 0,
       status: 'open',
       exitPrice: null, exitReason: null,
       strategiesFired: strategyId ? [strategyId] : [],
-      balanceBefore: account.balance,
-      balanceAfter: account.balance,
-      peakR: 0, lowestR: 0,
-      timeInTrade: 0
+      balanceBefore: account.balance, balanceAfter: account.balance,
+      peakR: 0, lowestR: 0, timeInTrade: 0
     };
     App.JournalStore.add(trade);
     account.dayTradesCount++;
@@ -1545,7 +1569,6 @@ App.PaperTrades = {
     return trade;
   },
 
-  /** Update open trades based on current price */
   updateOpenTrades(prices){
     const list = App.JournalStore.list();
     let changed = false, closedAny = false;
@@ -1564,7 +1587,6 @@ App.PaperTrades = {
         t.pnl = +(t.rMultiple * t.riskAmount).toFixed(2);
         t.timeInTrade = Math.floor((Date.now() - t.openedAt)/1000);
       }
-      // Check SL/TP hits
       let exit = null, reason = null;
       if(t.direction==='buy'){
         if(price <= t.sl){ exit = t.sl; reason = 'SL'; }
@@ -1577,18 +1599,12 @@ App.PaperTrades = {
         else if(price <= t.tp2){ exit = t.tp2; reason = 'TP2'; }
         else if(price <= t.tp1){ exit = t.tp1; reason = 'TP1'; }
       }
-      if(reason){
-        this.close(t.id, exit, reason);
-        closedAny = true;
-      } else {
-        App.JournalStore.update(t.id, t);
-        changed = true;
-      }
+      if(reason){ this.close(t.id, exit, reason); closedAny = true; }
+      else { App.JournalStore.update(t.id, t); changed = true; }
     }
     return { changed, closedAny };
   },
 
-  /** Close a trade */
   close(id, exitPrice, reason='Manual'){
     const list = App.JournalStore.list();
     const t = list.find(x=>x.id===id);
@@ -1602,14 +1618,11 @@ App.PaperTrades = {
     t.rMultiple = slDist>0 ? +(diff/slDist).toFixed(4) : 0;
     t.pnl = +(t.rMultiple * t.riskAmount).toFixed(2);
 
-    // Update account
     const account = App.Account.load();
     account.balance = +(account.balance + t.pnl).toFixed(2);
     if(account.balance > account.peakBalance) account.peakBalance = account.balance;
     if(account.balance < account.lowestBalance) account.lowestBalance = account.balance;
-    if(t.pnl > 0) account.totalWins++;
-    else account.totalLosses++;
-    // Check halt conditions
+    if(t.pnl > 0) account.totalWins++; else account.totalLosses++;
     const dailyPl = account.balance - account.dayStartBalance;
     const dailyLimit = (App.Store.get('dailyLossPercent')/100) * account.startBalance;
     if(dailyPl <= -dailyLimit){
@@ -1662,10 +1675,10 @@ App.Exports = {
   },
   json(){
     const data = {
-      trades:App.JournalStore.list(),
-      strategies:App.StrategyStore.list(),
-      settings:App.Store.all(),
-      account:App.Account.get(),
+      trades: App.JournalStore.list(),
+      strategies: App.StrategyStore.list(),
+      settings: App.Store.all(),
+      account: App.Account.get(),
       keys: App.KeyPool.list().map(k=>({ ...k, value: k.value.slice(0,4)+'...'+k.value.slice(-4) }))
     };
     this.dl(JSON.stringify(data,null,2), `tradeRadar_full_${Date.now()}.json`,'application/json');
@@ -1689,37 +1702,28 @@ App.Exports = {
     try{ if(eqC && eqC.width>0) eqImg = eqC.toDataURL('image/png'); }catch(e){}
     const html = `
       <div class="print-header">
-        <h1>TradeRadar v6.0 — تقرير الأداء</h1>
+        <h1>TradeRadar v6.1 — تقرير الأداء</h1>
         <p>التاريخ: ${new Date().toLocaleString('ar-EG')}</p>
       </div>
       <h3>ملخص الحساب</h3>
       <table class="data">
         <tr><td>الرصيد الافتتاحي</td><td>${acc.startBalance.toFixed(2)}$</td><td>الرصيد الحالي</td><td>${acc.balance.toFixed(2)}$</td></tr>
         <tr><td>إجمالي P/L</td><td>${(acc.balance-acc.startBalance).toFixed(2)}$</td><td>نسبة العائد</td><td>${((acc.balance-acc.startBalance)/acc.startBalance*100).toFixed(2)}%</td></tr>
-        <tr><td>أعلى رصيد</td><td>${acc.peakBalance.toFixed(2)}$</td><td>أدنى رصيد</td><td>${acc.lowestBalance.toFixed(2)}$</td></tr>
       </table>
       <h3>ملخص الأداء</h3>
       <table class="data">
         <tr><td>إجمالي الصفقات المغلقة</td><td>${closed.length}</td><td>Win Rate</td><td>${wr.toFixed(1)}%</td></tr>
         <tr><td>Profit Factor</td><td>${pf.toFixed(2)}</td><td>إجمالي R</td><td>${sumR.toFixed(2)}</td></tr>
-        <tr><td>متوسط R</td><td>${closed.length?(sumR/closed.length).toFixed(2):'0'}</td><td>عدد الرابحة</td><td>${wins.length}</td></tr>
       </table>
       ${eqImg?`<h3>منحنى رأس المال</h3><img src="${eqImg}" style="max-width:100%;border:1px solid #ccc">`:''}
-      <h3>سجل الصفقات (200 الأحدث)</h3>
+      <h3>سجل الصفقات</h3>
       <table class="data">
-        <thead><tr><th>التاريخ</th><th>الرمز</th><th>الاتجاه</th><th>الدخول</th><th>الخروج</th><th>R</th><th>P/L</th><th>السبب</th><th>الحالة</th></tr></thead>
+        <thead><tr><th>التاريخ</th><th>الرمز</th><th>الاتجاه</th><th>الدخول</th><th>الخروج</th><th>R</th><th>P/L</th><th>السبب</th></tr></thead>
         <tbody>
-          ${list.slice(0,200).map(t=>`<tr><td>${new Date(t.openedAt).toLocaleString('ar-EG')}</td><td>${t.symbol}</td><td>${t.direction==='buy'?'شراء':'بيع'}</td><td>${(t.entry||0).toFixed(4)}</td><td>${t.exitPrice?t.exitPrice.toFixed(4):'—'}</td><td>${(t.rMultiple||0).toFixed(2)}</td><td>${(t.pnl||0).toFixed(2)}</td><td>${t.exitReason||'—'}</td><td>${t.status}</td></tr>`).join('')}
+          ${list.slice(0,200).map(t=>`<tr><td>${new Date(t.openedAt).toLocaleString('ar-EG')}</td><td>${t.symbol}</td><td>${t.direction==='buy'?'شراء':'بيع'}</td><td>${(t.entry||0).toFixed(4)}</td><td>${t.exitPrice?t.exitPrice.toFixed(4):'—'}</td><td>${(t.rMultiple||0).toFixed(2)}</td><td>${(t.pnl||0).toFixed(2)}</td><td>${t.exitReason||'—'}</td></tr>`).join('')}
         </tbody>
       </table>
-      <h3>أداء الاستراتيجيات (Backtest)</h3>
-      <table class="data">
-        <thead><tr><th>الاسم</th><th>WR</th><th>PF</th><th>صفقات</th><th>Sharpe</th></tr></thead>
-        <tbody>
-          ${App.StrategyStore.list().map(s=>`<tr><td>${s.name}</td><td>${(s.backtest?.winRate||0).toFixed(1)}%</td><td>${(s.backtest?.profitFactor||0).toFixed(2)}</td><td>${s.backtest?.totalTrades||0}</td><td>${(s.backtest?.sharpe||0).toFixed(2)}</td></tr>`).join('')}
-        </tbody>
-      </table>
-      <p style="margin-top:20px;font-size:11px;color:#666">إخلاء مسؤولية: هذا التقرير لأغراض تعليمية فقط. التداول الحقيقي يحمل مخاطر عالية.</p>
+      <p style="margin-top:20px;font-size:11px;color:#666">إخلاء مسؤولية: هذا التقرير لأغراض تعليمية فقط.</p>
     `;
     const area = document.getElementById('printArea');
     area.innerHTML = html;
@@ -1828,10 +1832,11 @@ App.UI = {
       const chgCls = chg==null?'':(chg>0?'up':chg<0?'down':'');
       const sig = this.state.latestSignals[s.id];
       const tierEl = sig ? `<span class="tier ${sig.tier.cls}" style="padding:2px 7px;border-radius:6px;font-size:9px">${sig.tier.key} • ${sig.score}</span>` : '<span class="tier tier-notrade" style="padding:2px 7px;border-radius:6px;font-size:9px">— —</span>';
+      const safeId = s.id.replace(/[^a-z0-9]/gi,'_');
       return `<div class="symcard ${this.state.currentSymbol===s.id?'active':''}" data-symbol="${s.id}" onclick="App.UI.selectSymbol('${s.id}')">
         <div class="name">${s.id} <span style="color:var(--muted);font-weight:400">• ${s.label||''}</span></div>
-        <div class="price" id="px_${s.id.replace(/[^a-z0-9]/gi,'_')}">${price!=null?price.toFixed(4):'—'}</div>
-        <div class="chg ${chgCls}" id="chg_${s.id.replace(/[^a-z0-9]/gi,'_')}">${chg!=null?(chg>0?'+':'')+chg.toFixed(2)+'%':'—'}</div>
+        <div class="price" id="px_${safeId}">${price!=null?price.toFixed(4):'—'}</div>
+        <div class="chg ${chgCls}" id="chg_${safeId}">${chg!=null?(chg>0?'+':'')+chg.toFixed(2)+'%':'—'}</div>
         <div style="margin-top:5px">${tierEl}</div>
       </div>`;
     }).join('');
@@ -2043,7 +2048,6 @@ App.UI = {
       return `<div title="${i}:00 — R:${v.toFixed(2)}" style="background:${color}"></div>`;
     }).join('');
 
-    // Strategy performance (backtest)
     const strats = App.StrategyStore.list();
     document.querySelector('#stratPerfTable tbody').innerHTML = strats.length ? strats.map(s=>{
       const bt = s.backtest || {};
@@ -2229,7 +2233,6 @@ App.UI = {
     App.Alerts.toast('تم الحفظ ✅','success');
   },
 
-  /* ===== KEYS UI ===== */
   renderKeys(){
     const list = App.KeyPool.list();
     const root = document.getElementById('keysList');
@@ -2271,10 +2274,7 @@ App.UI = {
     document.getElementById('keysChip').textContent = App.KeyPool.activeCount();
   },
 
-  _updateKey(id, field, value){
-    App.KeyPool.update(id, { [field]: value });
-    this.renderKeys();
-  },
+  _updateKey(id, field, value){ App.KeyPool.update(id, { [field]: value }); this.renderKeys(); },
   _deleteKey(id){
     this.confirmModal('حذف هذا المفتاح؟','تأكيد').then(ok=>{
       if(ok){ App.KeyPool.remove(id); this.renderKeys(); App.Alerts.toast('تم الحذف','info'); }
@@ -2288,13 +2288,9 @@ App.UI = {
       const url = `${CFG.API_BASE}/price?symbol=XAU/USD&apikey=${encodeURIComponent(k.value)}`;
       const res = await fetch(url);
       const d = await res.json();
-      if(d.status === 'error'){
-        App.Alerts.toast('❌ ' + (d.message||'فشل'),'error');
-      } else if(d.price){
-        App.Alerts.toast(`✅ يعمل — XAU/USD = ${d.price}`,'success');
-      } else {
-        App.Alerts.toast('⚠️ رد غير متوقع','warn');
-      }
+      if(d.status === 'error'){ App.Alerts.toast('❌ ' + (d.message||'فشل'),'error'); }
+      else if(d.price){ App.Alerts.toast(`✅ يعمل — XAU/USD = ${d.price}`,'success'); }
+      else { App.Alerts.toast('⚠️ رد غير متوقع','warn'); }
     }catch(e){ App.Alerts.toast('❌ فشل الاتصال: '+e.message,'error'); }
   },
   async _testAllKeys(){
@@ -2309,9 +2305,9 @@ App.UI = {
     for(const k of list){
       const u = await App.TD.apiUsage(k.value);
       if(u && u.current_usage!=null){
-        lines.push(`<div class="diag-line"><b>${k.label}</b>: ${u.current_usage}/${u.plan_limit||CFG.DAILY_LIMIT}</div>`);
+        lines.push(`<div style="padding:6px 0;border-bottom:1px dashed var(--border)"><b>${k.label}</b>: ${u.current_usage}/${u.plan_limit||CFG.DAILY_LIMIT}</div>`);
       } else {
-        lines.push(`<div class="diag-line">${k.label}: —</div>`);
+        lines.push(`<div style="padding:6px 0;border-bottom:1px dashed var(--border)">${k.label}: —</div>`);
       }
     }
     this.showModal('📊 الاستخدام', lines.join(''));
@@ -2426,8 +2422,19 @@ App.UI = {
     this.state.clockTimer = setInterval(tick, 1000);
   },
 
-  /* Refresh prices + analysis */
+  setStatus(status){
+    const d = document.getElementById('connDot');
+    const t = document.getElementById('connText');
+    if(!d) return;
+    if(status === 'ready'){ d.className = 'status-dot ready'; t.textContent = 'جاهز'; }
+    else if(status === 'busy'){ d.className = 'status-dot busy'; t.textContent = 'جاري...'; }
+    else if(status === 'error'){ d.className = 'status-dot error'; t.textContent = 'خطأ'; }
+    else { d.className = 'status-dot'; t.textContent = '—'; }
+  },
+
   async refreshPrices(){
+    if(!App.KeyPool.list().length) return;
+    this.setStatus('busy');
     const syms = (App.Store.get('symbols')||[]).filter(s=>s.enabled!==false);
     const prices = {};
     for(const s of syms){
@@ -2439,7 +2446,6 @@ App.UI = {
         if(st.firstPrice) st.changePct = ((p - st.firstPrice)/st.firstPrice)*100;
         this.state.tickData[s.id] = st;
         prices[s.id] = p;
-        // flash
         const safeId = s.id.replace(/[^a-z0-9]/gi,'_');
         const pxEl = document.getElementById('px_'+safeId);
         if(pxEl){
@@ -2456,17 +2462,19 @@ App.UI = {
         }
       }catch(e){ console.warn('price fail', s.id, e.message); }
     }
-    // Update open trades with new prices
     const upd = App.PaperTrades.updateOpenTrades(prices);
     if(upd.changed || upd.closedAny){
       this.renderPositions(); this.renderMiniJournal();
       if(upd.closedAny){ this.renderAccount(); this.renderJournal(); this.renderStats(); }
     }
     this.renderKeys();
+    document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString('ar-EG');
+    this.setStatus('ready');
     return prices;
   },
 
   async runAnalysis(symbol){
+    if(!App.KeyPool.list().length) return;
     if(!symbol) symbol = this.state.currentSymbol;
     try{
       const res = await App.Analysis.evaluate(symbol, this.state.currentTf);
@@ -2481,6 +2489,10 @@ App.UI = {
   },
 
   async refreshAll(manual=false){
+    if(!App.KeyPool.list().length){
+      if(manual) App.Alerts.toast('⚠️ أضف مفتاح TwelveData أولاً','warn');
+      return;
+    }
     if(manual) App.Alerts.toast('🔄 تحديث...','info',1500);
     try{
       await this.refreshPrices();
@@ -2489,13 +2501,22 @@ App.UI = {
   },
 
   startTimers(){
-    // Prices every 30s (configurable)
-    const priceSec = App.Store.get('refreshSec') || 30;
     if(this.state.refreshTimer) clearInterval(this.state.refreshTimer);
-    this.state.refreshTimer = setInterval(()=> this.refreshPrices(), priceSec*1000);
-    // Analysis every 60s
     if(this.state.analysisTimer) clearInterval(this.state.analysisTimer);
-    this.state.analysisTimer = setInterval(()=> this.runAnalysis(), 60000);
+
+    const priceSec = Math.max(30, App.Store.get('refreshSec') || 30);
+
+    this.state.refreshTimer = setInterval(async () => {
+      try { await this.refreshPrices(); }
+      catch(e){ console.error('🔴 price timer error:', e); }
+    }, priceSec * 1000);
+
+    this.state.analysisTimer = setInterval(async () => {
+      try { await this.runAnalysis(); }
+      catch(e){ console.error('🔴 analysis timer error:', e); }
+    }, 60000);
+
+    console.log('⏱ Timers started: prices every', priceSec, 's, analysis every 60s');
   }
 };
 
@@ -2506,14 +2527,14 @@ App.Boot = {
   async init(){
     App.UI.init();
 
-    // Bind buttons
     document.getElementById('takeTradeBtn').onclick = ()=> App.UI.takeTrade();
     document.getElementById('addKeyBtn').onclick = ()=>{
       const val = prompt('الصق مفتاح TwelveData الجديد:');
       if(!val || val.trim().length < 8){ App.Alerts.toast('مفتاح غير صالح','error'); return; }
       App.KeyPool.add(val.trim(), 'Key '+(App.KeyPool.list().length+1));
       App.UI.renderKeys();
-      App.Alerts.toast('تمت إضافة المفتاح ✅','success');
+      App.Alerts.toast('✅ تمت إضافة المفتاح — جاري التحديث...','success');
+      setTimeout(()=> location.reload(), 800);
     };
     document.getElementById('testAllKeysBtn').onclick = ()=> App.UI._testAllKeys();
     document.getElementById('usageAllKeysBtn').onclick = ()=> App.UI._usageAllKeys();
@@ -2579,24 +2600,32 @@ App.Boot = {
       if(el) el.onchange = ()=> App.UI.renderJournal();
     });
 
-    // Boot check
-    if(!App.KeyPool.list().length){
-      App.Alerts.toast('🔑 مرحباً! أضف مفتاح TwelveData من الإعدادات','info',8000);
+    // === BOOT ===
+    const hasKeys = App.KeyPool.list().length > 0;
+
+    // Always render symbol cards
+    App.UI.renderSymbolCards();
+
+    // Always setup chart
+    App.Chart.init();
+    const curSym = App.UI.state.currentSymbol;
+    const s = (App.Store.get('symbols')||[]).find(x=>x.id===curSym);
+    if(s){
+      document.getElementById('chartSymLabel').textContent = s.label || s.id;
+      document.getElementById('chartTfLabel').textContent = CFG.TIMEFRAMES[App.UI.state.currentTf] || 'M15';
+    }
+    App.Chart.load(curSym, App.UI.state.currentTf);
+
+    // Always start timers
+    App.UI.startTimers();
+
+    if(!hasKeys){
+      App.Alerts.toast('🔑 أضف مفتاح TwelveData من الإعدادات للبدء','info',8000);
       App.UI.showTab('settings');
+      App.UI.setStatus('error');
     } else {
-      const syms = App.Store.get('symbols') || [];
-      if(syms[0]){
-        const s = syms.find(x=>x.id===App.UI.state.currentSymbol) || syms[0];
-        App.UI.state.currentSymbol = s.id;
-        document.getElementById('chartSymLabel').textContent = s.label || s.id;
-        document.getElementById('chartTfLabel').textContent = CFG.TIMEFRAMES[App.UI.state.currentTf] || 'M15';
-      }
-      App.UI.renderSymbolCards();
-      try{
-        await App.UI.refreshAll(false);
-        App.Chart.load(App.UI.state.currentSymbol, App.UI.state.currentTf);
-      }catch(e){ console.error('boot fail', e); }
-      App.UI.startTimers();
+      App.UI.setStatus('busy');
+      try{ await App.UI.refreshAll(false); }catch(e){ console.error('initial refresh', e); }
     }
 
     window.addEventListener('beforeunload', ()=>{
@@ -2605,7 +2634,8 @@ App.Boot = {
       if(App.UI.state.refreshTimer) clearInterval(App.UI.state.refreshTimer);
     });
 
-    console.log('%c TradeRadar v6.0 ready ','background:#00e5a0;color:#04281d;font-weight:bold;padding:4px 8px;border-radius:4px');
+    console.log('%c TradeRadar v6.1 ready ','background:#00e5a0;color:#04281d;font-weight:bold;padding:4px 8px;border-radius:4px');
+    console.log(CFG.LOG.DATA, 'TradingView + TwelveData + Paper Trading');
   },
 
   showComparison(){
